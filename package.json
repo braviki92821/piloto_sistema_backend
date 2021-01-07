@@ -1,0 +1,82 @@
+{
+  "name": "pdnsx",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "ckey": "^1.0.2",
+    "cors": "^2.8.4",
+    "dotenv": "^8.2.0",
+    "express": "^4.16.3",
+    "ibm-openapi-validator": "^0.31.1",
+    "js-yaml": "^3.14.0",
+    "jsonwebtoken": "^8.5.1",
+    "md5": "^2.2.1",
+    "moment": "^2.29.1",
+    "mongoose": "^5.9.26",
+    "mongoose-paginate-v2": "^1.3.9",
+    "regenerator-runtime": "^0.13.7",
+    "swagger-client": "^3.12.0",
+    "swagger-model-validator": "^3.0.19",
+    "swagger-object-validator": "^1.3.0",
+    "tslib": "^2.0.3",
+    "underscore": "^1.12.0",
+    "uuid": "^3.3.2",
+    "web-vitals": "^0.2.4",
+    "yaml-schema-validator": "^1.2.2",
+    "yup": "^0.31.0"
+  },
+  "scripts": {
+    "scripts": {
+      "build": "rm -rf dist && webpack --mode development",
+      "start": "node ./dist/server.js"
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/node": "^7.0.0",
+    "@babel/plugin-proposal-class-properties": "^7.12.1",
+    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-react": "^7.0.0",
+    "@babel/register": "^7.0.0",
+    "@types/react-router": "^5.1.8",
+    "babel-loader": "^8.0.2",
+    "concurrently": "^4.0.1",
+    "cross-env": "^5.2.0",
+    "dotenv-webpack": "^6.0.0",
+    "file-loader": "^6.2.0",
+    "highground": "^1.0.3-beta",
+    "html-loader": "^1.3.2",
+    "html-webpack-plugin": "^4.5.1",
+    "jest": "^23.6.0",
+    "json-loader": "^0.5.7",
+    "mongoose": "^5.9.26",
+    "mongoose-paginate-v2": "^1.3.9",
+    "nodemon": "^1.18.4",
+    "style-loader": "^0.23.0",
+    "ts-loader": "^8.0.11",
+    "typescript": "^4.1.2",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.1.7",
+    "webpack-node-externals": "^2.5.2"
+  }
+}
