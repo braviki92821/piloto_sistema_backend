@@ -261,7 +261,7 @@ app.put('/edit/user',async (req,res)=>{
     }
 });
 
-
+/*
 app.post('/getUsers',async (req,res)=>{
     try {
 
@@ -283,7 +283,7 @@ app.post('/getUsers',async (req,res)=>{
         console.log(e);
     }
 
-});
+});*/
 
 
 app.post('/getUsersFull',async (req,res)=>{
@@ -302,6 +302,7 @@ app.post('/getUsersFull',async (req,res)=>{
     }
 });
 
+/*
 app.post('/getProviders',async (req,res)=>{
     try {
 
@@ -324,6 +325,7 @@ app.post('/getProviders',async (req,res)=>{
     }
 
 });
+*/
 
 app.post('/getProvidersFull',async (req,res)=>{
     try {

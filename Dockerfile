@@ -1,12 +1,13 @@
 FROM node:12.18.1
 
+ADD . /backend
 WORKDIR /backend
 
-COPY ["package.json", "package-lock.json*", "./"]
+COPY ["package.json", "package-lock.json*", "webpack.config.js", "./"]
 
 RUN npm install
-RUN npm run build
-
 COPY . .
 
-CMD [ "node", " ./dist/server.js" ]
+RUN npm run build
+
+CMD [ "npm", "start" ]
