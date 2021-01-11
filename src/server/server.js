@@ -261,29 +261,34 @@ app.put('/edit/user',async (req,res)=>{
     }
 });
 
-/*
+
 app.post('/getUsers',async (req,res)=>{
     try {
 
-        let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
-        let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
-        let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
-        let query = req.body.query === undefined ? {} : req.body.query;
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
+            let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
+            let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+            let query = req.body.query === undefined ? {} : req.body.query;
 
-        const paginationResult = await User.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
-        let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
-        let objresults = paginationResult.docs;
+            const paginationResult = await User.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
+            let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
+            let objresults = paginationResult.docs;
 
-        let objResponse= {};
-        objResponse["pagination"] = objpagination;
-        objResponse["results"]= objresults;
+            let objResponse= {};
+            objResponse["pagination"] = objpagination;
+            objResponse["results"]= objresults;
 
-        res.status(200).json(objResponse);
+            res.status(200).json(objResponse);
+        }
     }catch (e) {
         console.log(e);
     }
 
-});*/
+});
 
 
 app.post('/getUsersFull',async (req,res)=>{
@@ -302,30 +307,35 @@ app.post('/getUsersFull',async (req,res)=>{
     }
 });
 
-/*
+
 app.post('/getProviders',async (req,res)=>{
     try {
 
-        let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
-        let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
-        let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
-        let query = req.body.query === undefined ? {} : req.body.query;
-        console.log({page :page , limit: pageSize, sort: sortObj});
-        const paginationResult = await Provider.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
-        let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
-        let objresults = paginationResult.docs;
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
+            let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
+            let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+            let query = req.body.query === undefined ? {} : req.body.query;
+            console.log({page :page , limit: pageSize, sort: sortObj});
+            const paginationResult = await Provider.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
+            let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
+            let objresults = paginationResult.docs;
 
-        let objResponse= {};
-        objResponse["pagination"] = objpagination;
-        objResponse["results"]= objresults;
-        
-        res.status(200).json(objResponse);
+            let objResponse= {};
+            objResponse["pagination"] = objpagination;
+            objResponse["results"]= objresults;
+
+            res.status(200).json(objResponse);
+        }
     }catch (e) {
         console.log(e);
     }
 
 });
-*/
+
 
 app.post('/getProvidersFull',async (req,res)=>{
     try {
