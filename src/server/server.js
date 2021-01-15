@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import path from 'path';
+import * as Yup from 'yup';
 import User from './schemas/model.user';
 import Provider from './schemas/model.proovedor';
+import Catalog from './schemas/model.catalog';
 import moment from "moment";
 const mongoose = require('mongoose');
 const yaml = require('js-yaml')
@@ -108,7 +110,7 @@ app.post('/validateSchemaS2',async (req,res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
-            let fileContents = fs.readFileSync( path.resolve(__dirname, '../app/resource/openapis2.yaml'), 'utf8');
+            let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
             let data = yaml.safeLoad(fileContents);
             let schemaS2 =  data.components.schemas.respSpic_inner;
             let validacion = new swaggerValidator.Handler();
@@ -221,18 +223,52 @@ app.put('/edit/provider',async(req, res)=>{
 
 app.post('/create/user',async (req,res)=>{
     try {
+        console.log(req.body);
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
-            const nuevoUsuario = new User(req.body);
-            let response;
-            if(req.body._id ){
-                response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
-            }else{
-                response = await nuevoUsuario.save();
-            }
-            res.status(200).json(response);
+
+            const schema = Yup.object().shape({
+                nombre: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"),'no se permiten números, ni cadenas vacias' ).required().trim(),
+                apellidoUno: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+                apellidoDos: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+                cargo: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+                correoElectronico: Yup.string().required().email(),
+                telefono:  Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required().trim(),
+                extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').required().trim(),
+                usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'),'Inserta al menos 8 caracteres, no se permiten caracteres especiales' ).required().trim(),
+                constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required().trim(),
+                sistemas: Yup.array().min(1).required(),
+                proveedorDatos: Yup.string().required()
+            });
+
+         schema.isValid({ nombre : req.body.nombre,
+             apellidoUno : req.body.apellidoUno,
+             apellidoDos : req.body.apellidoDos,
+             cargo : req.body.cargo,
+             correoElectronico : req.body.correoElectronico,
+             telefono : req.body.telefono,
+             extension : req.body.extension,
+             usuario : req.body.usuario,
+             constrasena : req.body.constrasena,
+             sistemas : req.body.sistemas,
+             proveedorDatos : req.body.proveedorDatos})
+             .then(async function (valid) {
+                 if(valid){
+                     const nuevoUsuario = new User(req.body);
+                     let response;
+                     if(req.body._id ){
+                         response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
+                     }else{
+                         response = await nuevoUsuario.save();
+                     }
+                     res.status(200).json(response);
+                 }else{
+                     console.log(valid);
+                 }
+
+             });
         }
     }catch (e) {
         console.log(e);
@@ -357,6 +393,23 @@ app.post('/getProvidersFull',async (req,res)=>{
 
 
             objResponse["results"] = strippedRows;
+            res.status(200).json(objResponse);
+        }
+    }catch (e) {
+        console.log(e);
+    }
+});
+
+app.post('/getCatalogs',async (req,res)=>{
+    try {
+        var code = validateToken(req);
+        let docType= req.body.docType;
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            const result = await Catalog.find({docType: docType}).then();
+            let objResponse= {};
+            objResponse["results"]= result;
             res.status(200).json(objResponse);
         }
     }catch (e) {
