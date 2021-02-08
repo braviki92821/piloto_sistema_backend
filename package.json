@@ -27,8 +27,8 @@
     "yup": "^0.31.0"
   },
   "scripts": {
-      "build": "webpack --mode development",
-      "start": "node ./dist/server.js"
+    "build": "webpack --mode development",
+    "start": "node ./dist/server.js"
   },
   "eslintConfig": {
     "extends": [

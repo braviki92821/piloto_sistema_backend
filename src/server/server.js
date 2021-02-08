@@ -7,6 +7,7 @@ import User from './schemas/model.user';
 import {spicSchema} from './schemas/model.s2';
 import Provider from './schemas/model.proovedor';
 import Catalog from './schemas/model.catalog';
+import Bitacora from './schemas/model.bitacora';
 import moment from "moment";
 const mongoose = require('mongoose');
 const yaml = require('js-yaml')
@@ -108,6 +109,12 @@ const schemaProvider = Yup.object().shape({
     fechaAlta: Yup.string(),
 });
 
+async function registroBitacora(data){
+    let response;
+    const nuevaBitacora = new Bitacora(data);
+    response = await nuevaBitacora.save();
+}
+
 async function validateSchema(doc,schema,validacion){
      let result =  await validacion.validateModel(doc, schema);
      if(result){
@@ -155,6 +162,13 @@ app.post('/validateSchemaS2',async (req,res)=>{
             }else{
                 respuesta.push(await validateSchema([newdocument],schemaS2,validacion));
             }
+
+            data["tipoOperacion"]="POST";
+            data["fechaOperacion"]= moment().format();
+            data["usuario"]=req.body.request.user;
+            data["numeroRegistros"]=1;
+            data["sistema"]="S2";
+            registroBitacora(data);
             res.status(200).json(respuesta);
         }
     }catch (e) {
@@ -169,6 +183,8 @@ app.delete('/deleteUser',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             if(req.body.request._id){
+                var data=[];
+
                 let fechabaja = moment().format();
                 let response = await User.findByIdAndUpdate( req.body.request._id , {$set: {fechaBaja : fechabaja}} ).exec();
                 res.status(200).json({message : "OK" , Status : 200, response : response} );
@@ -204,6 +220,7 @@ app.delete('/deleteProvider',async (req,res)=>{
 app.post('/create/provider',async(req, res)=>{
     try {
         var code = validateToken(req);
+
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
@@ -219,6 +236,7 @@ app.post('/create/provider',async(req, res)=>{
                 const nuevoProovedor = new Provider(req.body);
                 let responce;
                 responce = await nuevoProovedor.save();
+
                 res.status(200).json(responce);
             }catch (e) {
                 let errorMessage = {};
@@ -239,6 +257,7 @@ app.post('/create/provider',async(req, res)=>{
 app.put('/edit/provider',async(req, res)=>{
     try {
         var code = validateToken(req);
+
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
@@ -533,6 +552,7 @@ app.post('/getProviders',async (req,res)=>{
 
     app.post('/getProvidersFull',async (req,res)=>{
     try {
+
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
@@ -549,7 +569,33 @@ app.post('/getProviders',async (req,res)=>{
                 console.log(e);
             }
 
+            console.log({page :"pages" , limit: "pageSize", sort: "sortObj"});
+            objResponse["results"] = strippedRows;
+            res.status(200).json(objResponse);
+        }
+    }catch (e) {
+        console.log(e);
+    }
+});
 
+app.post('/getUsersAll',async (req,res)=>{
+    try {
+
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ) {
+            const result = await User.find();
+            let objResponse = {};
+
+            try {
+                var strippedRows = _.map(result, function (row) {
+                    let rowExtend = _.extend({label: row.usuario, value: row._id}, row.toObject());
+                    return rowExtend;
+                });
+            } catch (e) {
+                console.log(e);
+            }
             objResponse["results"] = strippedRows;
             res.status(200).json(objResponse);
         }
@@ -594,4 +640,48 @@ app.post('/getCatalogs',async (req,res)=>{
     }catch (e) {
         console.log(e);
     }
+});
+
+app.post('/getBitacora',async (req,res)=>{
+    try {
+       function horaActual(horaAct){
+            var zona = (new Date()).getTimezoneOffset()*60000 ; //offset in milliseconds
+            var hora = (new Date(horaAct-zona)).toISOString().slice(0, -5);
+            return hora;
+        }
+        var fechaInicial=horaActual(new Date(req.body.fechaInicial));
+        var fechaFinal=horaActual(new Date(req.body.fechaFinal));
+
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
+            let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
+            let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+            let query = req.body.query === undefined ? {} : req.body.query;
+            console.log({page :page , limit: pageSize, sort: sortObj});
+            if(((typeof req.body.sistema!="undefined")) && ((typeof req.body.usuarioBitacora !="undefined"))){
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $eq : req.body.sistema }});
+            }else if((typeof req.body.sistema!="undefined")){
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$eq : req.body.sistema }});
+            }else if((typeof req.body.usuarioBitacora!="undefined")){
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: req.body.usuarioBitacora});
+            }else{
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }});
+            }
+
+            let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
+            let objresults = paginationResult;
+            let objResponse= {};
+            objResponse["pagination"] = objpagination;
+            objResponse["results"]= objresults;
+
+            res.status(200).json(objResponse);
+            //console.log(objResponse);
+        }
+    }catch (e) {
+        console.log(e);
+    }
+
 });
