@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import path from 'path';
 import * as Yup from 'yup';
 import User from './schemas/model.user';
+import {spicSchema} from './schemas/model.s2';
 import Provider from './schemas/model.proovedor';
 import Catalog from './schemas/model.catalog';
 import moment from "moment";
@@ -17,7 +18,7 @@ var swaggerValidator = require('swagger-object-validator');
 var _ = require('underscore');
 var jwt = require('jsonwebtoken');
 import regeneratorRuntime from "regenerator-runtime";
-
+import * as Console from "console";
 
 
 //connection mongo db
@@ -28,6 +29,7 @@ const db = mongoose.connect('mongodb://'+process.env.USERMONGO+':'+process.env.P
 
 mongoose.set('useFindAndModify', false);
 
+let S2 = mongoose.connection.useDb("S2");
 //let port = process.env.PORT || 7777;
 let app = express();
 app.use(
@@ -77,6 +79,35 @@ var validateToken = function(req){
     }
 }
 
+const schemaUserCreate = Yup.object().shape({
+    vigenciaContrasena:  Yup.string().required(),
+    fechaAlta:  Yup.string().required(),
+});
+
+const schemaUser = Yup.object().shape({
+    nombre: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"),'no se permiten números, ni cadenas vacias' ).required().trim(),
+    apellidoUno: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+    apellidoDos: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+    cargo: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+    correoElectronico: Yup.string().required().email(),
+    telefono:  Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required().trim(),
+    extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').required().trim(),
+    usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'),'Inserta al menos 8 caracteres, no se permiten caracteres especiales' ).required().trim(),
+    constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required().trim(),
+    sistemas: Yup.array().min(1).required(),
+    proveedorDatos: Yup.string().required(),
+    estatus: Yup.boolean().required()
+});
+
+
+
+const schemaProvider = Yup.object().shape({
+    dependencia:  Yup.string().required().matches(new RegExp('^[ñáéíóúáéíóúÁÉÍÓÚa-zA-Z ]*$'), 'Inserta solamente caracteres'),
+    sistemas: Yup.array().min(1).required(),
+    estatus: Yup.boolean().required(),
+    fechaAlta: Yup.string(),
+});
+
 async function validateSchema(doc,schema,validacion){
      let result =  await validacion.validateModel(doc, schema);
      if(result){
@@ -112,17 +143,17 @@ app.post('/validateSchemaS2',async (req,res)=>{
         }else if (code.code == 200 ){
             let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
             let data = yaml.safeLoad(fileContents);
-            let schemaS2 =  data.components.schemas.respSpic_inner;
+            let schemaS2 =  data.components.schemas.respSpic;
             let validacion = new swaggerValidator.Handler();
 
             let newdocument = req.body;
             let respuesta=[];
             if(Array.isArray(newdocument)){
                 for (let doc of newdocument){
-                    respuesta.push(await validateSchema(doc,schemaS2,validacion));
+                    respuesta.push(await validateSchema([doc],schemaS2,validacion));
                 }
             }else{
-                respuesta.push(await validateSchema(newdocument,schemaS2,validacion));
+                respuesta.push(await validateSchema([newdocument],schemaS2,validacion));
             }
             res.status(200).json(respuesta);
         }
@@ -176,18 +207,28 @@ app.post('/create/provider',async(req, res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
-            const nuevoProovedor = new Provider(req.body);
-            let responce;
-            if (req.body['dependencia'] == "" || req.body['dependencia'] == null || req.body['sistemas'] == "" || req.body['sistemas'] == null) {
-                res.status(500).json([{"Error": "Datos incompletos"}]);
-                return false;
-            }
-            if (req.body._id) {
-                responce = await Provider.findByIdAndUpdate(req.body._id, nuevoProovedor).exec();
-            } else {
+
+            try {
+                await schemaProvider.validate({
+                    dependencia: req.body.dependencia,
+                    sistemas : req.body.sistemas,
+                    estatus : req.body.estatus,
+                    fechaAlta: req.body.fechaAlta
+                });
+
+                const nuevoProovedor = new Provider(req.body);
+                let responce;
                 responce = await nuevoProovedor.save();
+                res.status(200).json(responce);
+            }catch (e) {
+                let errorMessage = {};
+                errorMessage["errores"] = e.errors;
+                errorMessage["campo"]= e.path;
+                errorMessage["tipoError"] = e.type;
+                errorMessage["mensaje"] = e.message;
+                res.status(400).json(errorMessage);
             }
-            res.status(200).json(responce);
+
         }
     }catch (e){
         console.log(e);
@@ -201,19 +242,33 @@ app.put('/edit/provider',async(req, res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
-            const nuevoProovedor = new Provider(req.body);
-            let responce;
-            if (req.body['dependencia'] == "" || req.body['dependencia'] == null || req.body['sistemas'] == "" || req.body['sistemas'] == null) {
-                res.status(500).json([{"Error": "Datos incompletos"}]);
-                return false;
-            }
-            if (req.body._id) {
-                responce = await Provider.findByIdAndUpdate(req.body._id, nuevoProovedor).exec();
-                res.status(200).json(responce);
-            } else {
-                res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
-            }
+            try {
+                await Yup.object().shape({ fechaActualizacion: Yup.string().required(),}).concat(schemaProvider).validate({
+                    dependencia: req.body.dependencia,
+                    sistemas: req.body.sistemas,
+                    estatus: req.body.estatus,
+                    fechaAlta: req.body.fechaAlta,
+                    fechaActualizacion: req.body.fechaActualizacion
+                });
 
+                const nuevoProovedor = new Provider(req.body);
+                let responce;
+
+                if (req.body._id ) {
+                    responce = await Provider.findByIdAndUpdate(req.body._id, nuevoProovedor).exec();
+                    res.status(200).json(responce);
+                } else {
+                    res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+                }
+
+            }catch (e) {
+                let errorMessage = {};
+                errorMessage["errores"] = e.errors;
+                errorMessage["campo"]= e.path;
+                errorMessage["tipoError"] = e.type;
+                errorMessage["mensaje"] = e.message;
+                res.status(400).json(errorMessage);
+            }
         }
     }catch (e){
         console.log(e);
@@ -223,52 +278,44 @@ app.put('/edit/provider',async(req, res)=>{
 
 app.post('/create/user',async (req,res)=>{
     try {
-        console.log(req.body);
+
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
 
-            const schema = Yup.object().shape({
-                nombre: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"),'no se permiten números, ni cadenas vacias' ).required().trim(),
-                apellidoUno: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
-                apellidoDos: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
-                cargo: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
-                correoElectronico: Yup.string().required().email(),
-                telefono:  Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required().trim(),
-                extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').required().trim(),
-                usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'),'Inserta al menos 8 caracteres, no se permiten caracteres especiales' ).required().trim(),
-                constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required().trim(),
-                sistemas: Yup.array().min(1).required(),
-                proveedorDatos: Yup.string().required()
-            });
+            try {
 
-         schema.isValid({ nombre : req.body.nombre,
-             apellidoUno : req.body.apellidoUno,
-             apellidoDos : req.body.apellidoDos,
-             cargo : req.body.cargo,
-             correoElectronico : req.body.correoElectronico,
-             telefono : req.body.telefono,
-             extension : req.body.extension,
-             usuario : req.body.usuario,
-             constrasena : req.body.constrasena,
-             sistemas : req.body.sistemas,
-             proveedorDatos : req.body.proveedorDatos})
-             .then(async function (valid) {
-                 if(valid){
-                     const nuevoUsuario = new User(req.body);
-                     let response;
-                     if(req.body._id ){
-                         response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
-                     }else{
-                         response = await nuevoUsuario.save();
-                     }
-                     res.status(200).json(response);
-                 }else{
-                     console.log(valid);
-                 }
 
-             });
+              await schemaUserCreate.concat(schemaUser).validate({ nombre : req.body.nombre,
+                    apellidoUno : req.body.apellidoUno,
+                    apellidoDos : req.body.apellidoDos,
+                    cargo : req.body.cargo,
+                    correoElectronico : req.body.correoElectronico,
+                    telefono : req.body.telefono,
+                    extension : req.body.extension,
+                    usuario : req.body.usuario,
+                    constrasena : req.body.constrasena,
+                    sistemas : req.body.sistemas,
+                    proveedorDatos : req.body.proveedorDatos,
+                    estatus : req.body.estatus,
+                    fechaAlta:req.body.fechaAlta,
+                    vigenciaContrasena: req.body.vigenciaContrasena
+              });
+
+                  const nuevoUsuario = new User(req.body);
+                  let response;
+                  response = await nuevoUsuario.save();
+                  res.status(200).json(response);
+
+            }catch (e) {
+                let errorMessage = {};
+                errorMessage["errores"] = e.errors;
+                errorMessage["campo"]= e.path;
+                errorMessage["tipoError"] = e.type;
+                errorMessage["mensaje"] = e.message;
+                res.status(400).json(errorMessage);
+            }
         }
     }catch (e) {
         console.log(e);
@@ -278,19 +325,41 @@ app.post('/create/user',async (req,res)=>{
 
 app.put('/edit/user',async (req,res)=>{
     try {
+        console.log(req.body);
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
-            const nuevoUsuario = new User(req.body);
-            let response;
-            if(req.body._id ){
-                response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
-                res.status(200).json(response);
-            }else{
-                res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
-            }
+            try{
+                await schemaUser.validate({ nombre : req.body.nombre,
+                    apellidoUno : req.body.apellidoUno,
+                    apellidoDos : req.body.apellidoDos,
+                    cargo : req.body.cargo,
+                    correoElectronico : req.body.correoElectronico,
+                    telefono : req.body.telefono,
+                    extension : req.body.extension,
+                    usuario : req.body.usuario,
+                    constrasena : req.body.constrasena,
+                    sistemas : req.body.sistemas,
+                    proveedorDatos : req.body.proveedorDatos,
+                    estatus : req.body.estatus });
 
+                const nuevoUsuario = new User(req.body);
+                let response;
+                if(req.body._id ){
+                    response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
+                    res.status(200).json(response);
+                }else{
+                    res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+                }
+            }catch (e) {
+                let errorMessage = {};
+                errorMessage["errores"] = e.errors;
+                errorMessage["campo"]= e.path;
+                errorMessage["tipoError"] = e.type;
+                errorMessage["mensaje"] = e.message;
+                res.status(400).json(errorMessage);
+            }
         }
     }catch (e) {
         console.log(e);
@@ -343,6 +412,95 @@ app.post('/getUsersFull',async (req,res)=>{
     }
 });
 
+/////////////////////////////////////////////////////////SHEMA S2///////////////////////////////////////////
+
+app.post('/insertS2Schema',async (req,res)=>{
+    try {
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
+            let data = yaml.safeLoad(fileContents);
+            let schemaS2 =  data.components.schemas.respSpic;
+            let validacion = new swaggerValidator.Handler();
+            let newdocument = req.body;
+            let respuesta = await validateSchema([newdocument],schemaS2,validacion);
+            if(respuesta.valid) {
+                try {
+                    let Spic = S2.model('Spic',spicSchema, 'spic');
+                    delete req.body.id;
+                    console.log("bodyy "+req.body);
+                    let esquema= new Spic(req.body);
+                    const result = await esquema.save();
+                    let objResponse= {};
+
+                    objResponse["results"]= result;
+                    console.log(objResponse);
+                    res.status(200).json(objResponse);
+                }catch (e) {
+                    console.log(e);
+                }
+            }else{
+                console.log(respuesta);
+                res.status(400).json({message : "Error in validation" , Status : 400, response : respuesta});
+            }
+        }
+    }catch (e) {
+        console.log(e);
+    }
+});
+
+app.post('/listSchemaS2',async (req,res)=> {
+    try {
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let Spic = S2.model('Spic',spicSchema, 'spic');
+            let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
+            let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
+            let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+            let query = req.body.query === undefined ? {} : req.body.query;
+            console.log({page :page , limit: pageSize, sort: sortObj});
+            const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
+            let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
+            let objresults = paginationResult.docs;
+
+            let objResponse= {};
+            objResponse["pagination"] = objpagination;
+            objResponse["results"]= objresults;
+
+            res.status(200).json(objResponse);
+        }
+    }catch (e) {
+
+    }
+});
+
+
+app.delete('/deleteRecordS2',async (req,res)=>{
+    try {
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            if(req.body.request._id){
+                let Spic = S2.model('Spic',spicSchema, 'spic');
+               const deletedRecord =  await Spic
+                   .findByIdAndDelete( req.body.request._id)
+                   .catch(err => res.status(400).json({message : err.message , code: '400'})).then();
+
+                res.status(200).json({message : "OK" , Status : 200, response : deletedRecord} );
+            }else{
+                res.status(500).json({message:"Datos incompletos", code:'500'});
+            }
+        }
+    }catch (e) {
+        console.log(e);
+    }
+
+});
 
 app.post('/getProviders',async (req,res)=>{
     try {
@@ -373,7 +531,7 @@ app.post('/getProviders',async (req,res)=>{
 });
 
 
-app.post('/getProvidersFull',async (req,res)=>{
+    app.post('/getProvidersFull',async (req,res)=>{
     try {
         var code = validateToken(req);
         if(code.code == 401){
@@ -409,7 +567,28 @@ app.post('/getCatalogs',async (req,res)=>{
         }else if (code.code == 200 ){
             const result = await Catalog.find({docType: docType}).then();
             let objResponse= {};
-            objResponse["results"]= result;
+            let strippedRows;
+            if(docType === "genero" || docType === "ramo"|| docType === "tipoArea" || docType=== "nivelResponsabilidad" || docType === "tipoProcedimiento"){
+                try {
+                     strippedRows = _.map(result, function (row) {
+                        let rowExtend = _.extend({label: row.valor, value: JSON.stringify({clave:row.clave ,valor : row.valor})}, row.toObject());
+                        return rowExtend;
+                    });
+                } catch (e) {
+                    console.log(e);
+                }
+            }else if(docType === "puesto"){
+                try {
+                     strippedRows = _.map(result, function (row) {
+                        let rowExtend = _.extend({label: row.nombre, value: row.nivel}, row.toObject());
+                        return rowExtend;
+                    });
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+
+            objResponse["results"]= strippedRows;
             res.status(200).json(objResponse);
         }
     }catch (e) {
