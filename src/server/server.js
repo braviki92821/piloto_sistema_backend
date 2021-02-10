@@ -47,6 +47,13 @@ let server = app.listen(3004, function () {
 });
 
 
+function getArrayFormatTipoProcedimiento(array){
+    _.each(array, function(p){
+        p.clave = parseInt(p.clave);
+    });
+    return array;
+}
+
 var validateToken = function(req){
     var inToken = null;
     var auth = req.headers['authorization'];
@@ -79,6 +86,32 @@ var validateToken = function(req){
         return obj;
     }
 }
+
+const esquemaS2=  Yup.object().shape({
+    ejercicioFiscal: Yup.string().matches(new RegExp('^[0-9]{4}$'),'Debe tener 4 dígitos'),
+    ramo: Yup.string(),
+    nombres : Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).required().trim(),
+    primerApellido : Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).required().trim(),
+    segundoApellido :Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim(),
+    genero : Yup.object(),
+    idnombre:Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,50}$'),'no se permiten cadenas vacias , max 50 caracteres ').required().trim(),
+    idsiglas: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,50}$'),'no se permiten cadenas vacias , max 50 caracteres ').trim(),
+    idclave: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,50}$'),'no se permiten cadenas vacias , max 50 caracteres ').trim(),
+    puestoNombre: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim()
+        .when('puestoNivel',  (puestoNivel) => {
+            if(!puestoNivel)
+                return Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim().required("Al menos un campo seccion Puesto, es requerido ")
+        }),
+    puestoNivel :Yup.string().matches(new RegExp("^[a-zA-Z0-9 ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim(),
+    tipoArea: Yup.array(),
+    nivelResponsabilidad : Yup.array(),
+    tipoProcedimiento :Yup.array().min(1).required(),
+    sinombres: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim() ,
+    siPrimerApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim() ,
+    siSegundoApellido:Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim() ,
+    siPuestoNombre: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim(),
+    siPuestoNivel: Yup.string().matches(new RegExp("^[a-zA-Z0-9 ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim()
+});
 
 const schemaUserCreate = Yup.object().shape({
     vigenciaContrasena:  Yup.string().required(),
@@ -341,6 +374,121 @@ app.post('/create/user',async (req,res)=>{
     }
 });
 
+app.post('/updateS2Schema',async (req,res)=>{
+    try {
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let docSend={};
+            let values = req.body;
+            //validaciones
+            console.log("estamos en las validaciones ");
+            try {
+                await esquemaS2.validate(values);
+            }catch (e) {
+                let errorMessage = {};
+                errorMessage["errores"] = e.errors;
+                errorMessage["campo"]= e.path;
+                errorMessage["tipoError"] = e.type;
+                errorMessage["mensaje"] = e.message;
+                res.status(400).json(errorMessage);
+            }
+
+            docSend["id"]= values._id;
+            docSend["fechaCaptura"]= values.fechaCaptura;
+            docSend["ejercicioFiscal"]= values.ejercicioFiscal;
+            if(values.ramo){
+                let ramoObj = JSON.parse(values.ramo);
+                docSend["ramo"]= {clave:  parseInt(ramoObj.clave) , valor: ramoObj.valor };
+            }
+            docSend["nombres"]= values.nombres;
+            docSend["primerApellido"] =values.primerApellido;
+            docSend["segundoApellido"]= values.segundoApellido;
+            if(values.genero){
+                docSend["genero"]= JSON.parse(values.genero);
+            }
+
+            let ObjInstitucionDepe = {};
+            if(values.idnombre){  ObjInstitucionDepe = {...ObjInstitucionDepe,nombre : values.idnombre } }
+            if(values.idclave){ObjInstitucionDepe = {...ObjInstitucionDepe,clave: values.idclave } }
+            if(values.idsiglas){ObjInstitucionDepe = {...ObjInstitucionDepe,siglas: values.idsiglas } }
+            docSend["institucionDependencia"] = ObjInstitucionDepe;
+
+
+            let objPuesto = {}
+            if(values.puestoNombre){objPuesto= {...objPuesto,nombre: values.puestoNombre}}
+            if(values.puestoNivel){objPuesto= {...objPuesto, nivel: values.puestoNivel}}
+            docSend["puesto"]= objPuesto;
+
+            if(values.tipoArea){
+                docSend["tipoArea"]=JSON.parse("["+values.tipoArea+"]");
+            }
+            if(values.tipoProcedimiento){
+                let ObjTipoProcedimiento= JSON.parse("["+values.tipoProcedimiento+"]");
+                docSend["tipoProcedimiento"]= getArrayFormatTipoProcedimiento(ObjTipoProcedimiento);
+            }
+            if(values.nivelResponsabilidad){
+                docSend["nivelResponsabilidad"] = JSON.parse("[" + values.nivelResponsabilidad + "]");
+            }
+
+            let objSuperiorInmediato = {};
+            if(values.sinombres){
+                objSuperiorInmediato = {...objSuperiorInmediato, nombres: values.sinombres}
+            }
+            if(values.siPrimerApellido){
+                objSuperiorInmediato = {...objSuperiorInmediato, primerApellido: values.siPrimerApellido}
+            }
+            if(values.siSegundoApellido){
+                objSuperiorInmediato = {...objSuperiorInmediato, segundoApellido : values.siSegundoApellido}
+            }
+            let puestoObj={};
+            if(values.siPuestoNombre){
+                puestoObj =  {...puestoObj,nombre:values.siPuestoNombre};
+            }
+            if(values.siPuestoNivel){
+                puestoObj =  {...puestoObj,nivel: values.siPuestoNivel};
+            }
+            if(values.siPuestoNombre || values.siPuestoNivel ){
+                objSuperiorInmediato = {...objSuperiorInmediato,puesto: puestoObj}
+            }
+
+            docSend["superiorInmediato"] = objSuperiorInmediato;
+
+            console.log("ya paso la validacion  "+ JSON.stringify(docSend));
+
+            let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
+            let data = yaml.safeLoad(fileContents);
+            let schemaS2 =  data.components.schemas.respSpic;
+            let validacion = new swaggerValidator.Handler();
+            let newdocument = docSend;
+            let respuesta = await validateSchema([newdocument],schemaS2,validacion);
+            if(respuesta.valid) {
+                try {
+                    docSend["_id"]= values._id;
+                    let Spic = S2.model('Spic',spicSchema, 'spic');
+                    let esquema = new Spic(docSend);
+                    console.log("IDDD"+ esquema);
+                    let response;
+                    if(req.body._id ){
+                        await Spic.findByIdAndDelete(values._id);
+                        response = await Spic.findByIdAndUpdate(values._id ,esquema, {upsert: true, new: true} ).exec();
+                        res.status(200).json(response);
+                    }else{
+                        res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+                    }
+                }catch (e) {
+                    console.log(e);
+                }
+            }else{
+                console.log(respuesta);
+                res.status(400).json({message : "Error in validation openApi" , Status : 400, response : respuesta});
+            }
+        }
+    }catch (e) {
+        console.log(e);
+    }
+});
 
 app.put('/edit/user',async (req,res)=>{
     try {
@@ -481,6 +629,7 @@ app.post('/listSchemaS2',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
+
             console.log({page :page , limit: pageSize, sort: sortObj});
             const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
