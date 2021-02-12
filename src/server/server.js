@@ -396,15 +396,15 @@ app.post('/updateS2Schema',async (req,res)=>{
             }
 
             docSend["id"]= values._id;
-            docSend["fechaCaptura"]= values.fechaCaptura;
-            docSend["ejercicioFiscal"]= values.ejercicioFiscal;
+            if(values.fechaCaptura){docSend["fechaCaptura"]= values.fechaCaptura;}
+            if(values.ejercicioFiscal){docSend["ejercicioFiscal"]= values.ejercicioFiscal;}
             if(values.ramo){
                 let ramoObj = JSON.parse(values.ramo);
                 docSend["ramo"]= {clave:  parseInt(ramoObj.clave) , valor: ramoObj.valor };
             }
-            docSend["nombres"]= values.nombres;
-            docSend["primerApellido"] =values.primerApellido;
-            docSend["segundoApellido"]= values.segundoApellido;
+            if(values.nombres){docSend["nombres"]=values.nombres}
+            if(values.primerApellido){docSend["primerApellido"]=values.primerApellido}
+            if(values.segundoApellido){docSend["segundoApellido"]= values.segundoApellido}
             if(values.genero){
                 docSend["genero"]= JSON.parse(values.genero);
             }
@@ -421,14 +421,15 @@ app.post('/updateS2Schema',async (req,res)=>{
             if(values.puestoNivel){objPuesto= {...objPuesto, nivel: values.puestoNivel}}
             docSend["puesto"]= objPuesto;
 
-            if(values.tipoArea){
+
+            if(values.tipoArea && values.tipoArea.length > 0 ){
                 docSend["tipoArea"]=JSON.parse("["+values.tipoArea+"]");
             }
-            if(values.tipoProcedimiento){
+            if(values.tipoProcedimiento && values.tipoProcedimiento.length > 0){
                 let ObjTipoProcedimiento= JSON.parse("["+values.tipoProcedimiento+"]");
                 docSend["tipoProcedimiento"]= getArrayFormatTipoProcedimiento(ObjTipoProcedimiento);
             }
-            if(values.nivelResponsabilidad){
+            if(values.nivelResponsabilidad && values.nivelResponsabilidad.length > 0 ){
                 docSend["nivelResponsabilidad"] = JSON.parse("[" + values.nivelResponsabilidad + "]");
             }
 
@@ -630,7 +631,7 @@ app.post('/listSchemaS2',async (req,res)=> {
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
 
-            console.log({page :page , limit: pageSize, sort: sortObj});
+            console.log({page :page , limit: pageSize, sort: sortObj, query: query});
             const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult.docs;
