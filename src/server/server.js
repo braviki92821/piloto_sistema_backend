@@ -776,7 +776,7 @@ app.post('/getUsersAll',async (req,res)=>{
 
             try {
                 var strippedRows = _.map(result, function (row) {
-                    let rowExtend = _.extend({label: row.usuario, value: row._id}, row.toObject());
+                    let rowExtend = _.extend({label: (row.nombre+" "+row.apellidoUno+" "+row.apellidoDos), value: row._id}, row.toObject());
                     return rowExtend;
                 });
             } catch (e) {
@@ -848,9 +848,9 @@ app.post('/getBitacora',async (req,res)=>{
             let query = req.body.query === undefined ? {} : req.body.query;
             console.log({page :page , limit: pageSize, sort: sortObj});
             if(((typeof req.body.sistema!="undefined")) && ((typeof req.body.usuarioBitacora !="undefined"))){
-                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $eq : req.body.sistema }});
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $in : req.body.sistema }});
             }else if((typeof req.body.sistema!="undefined")){
-                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$eq : req.body.sistema }});
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$in : req.body.sistema }});
             }else if((typeof req.body.usuarioBitacora!="undefined")){
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: req.body.usuarioBitacora});
             }else{
