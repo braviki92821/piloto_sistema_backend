@@ -834,6 +834,8 @@ app.post('/getBitacora',async (req,res)=>{
         }
         var fechaInicial=horaActual(new Date(req.body.fechaInicial));
         var fechaFinal=horaActual(new Date(req.body.fechaFinal));
+        let objResponse= {};
+        let strippedRows;
 
         var code = validateToken(req);
         if(code.code == 401){
@@ -852,13 +854,55 @@ app.post('/getBitacora',async (req,res)=>{
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: req.body.usuarioBitacora});
             }else{
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }});
+                moment.locale('es');
+
+
+
+                strippedRows = _.map(paginationResult, function (row) {
+                    var fecha=moment(row.fechaOperacion).format('LLLL');
+
+                    var sistema=row.sistema;
+                    var sistema_label="";
+                    var tipoOperacion=row.tipoOperacion;
+                    var tipo="";
+
+                    if(sistema=="S2"){
+                        sistema_label="Sistema de Servidores Públicos que Intervienen en Procedimientos de Contratación.";
+                    }
+                    if(sistema=="S3S"){
+                        sistema_label="Sistema de los Servidores Públicos Sancionados.";
+                    }
+                    if(sistema=="S3P"){
+                        sistema_label="Sistema de los Particulares Sancionados.";
+                    }
+
+                    if(tipoOperacion=="CREATE"){
+                        tipo="Alta";
+                    }
+                    if(tipoOperacion=="DELETE"){
+                        tipo="Eliminación";
+                    }
+                    if(tipoOperacion=="UPDATE"){
+                        tipo="Actualización";
+                    }
+                    if(tipoOperacion=="READ"){
+                        tipo="Consulta";
+                    }
+
+
+                    let rowExtend = _.extend({fecha: fecha,tipo:tipo, sistema_label:sistema_label}, row.toObject());
+                    return rowExtend;
+                });
+                console.log(strippedRows);
+                //console.log(paginationResult);
+                paginationResult["resultado"]=strippedRows;
             }
 
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult;
             let objResponse= {};
             objResponse["pagination"] = objpagination;
-            objResponse["results"]= objresults;
+            objResponse["results"]= paginationResult["resultado"];
 
             res.status(200).json(objResponse);
             //console.log(objResponse);
