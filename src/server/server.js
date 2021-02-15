@@ -121,11 +121,11 @@ const schemaUserCreate = Yup.object().shape({
 const schemaUser = Yup.object().shape({
     nombre: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"),'no se permiten números, ni cadenas vacias' ).required().trim(),
     apellidoUno: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
-    apellidoDos: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
+    apellidoDos: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).trim(),
     cargo: Yup.string().matches(new RegExp('^[\'A-zÀ-ú ]*$'),'no se permiten números, ni cadenas vacias' ).required().trim(),
     correoElectronico: Yup.string().required().email(),
     telefono:  Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required().trim(),
-    extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').required().trim(),
+    extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').trim(),
     usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'),'Inserta al menos 8 caracteres, no se permiten caracteres especiales' ).required().trim(),
     constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required().trim(),
     sistemas: Yup.array().min(1).required(),
@@ -154,7 +154,8 @@ async function validateSchema(doc,schema,validacion){
         let objError={};
         let arrayErrors = result.errorsWithStringTypes();
         let textErrors;
-        objError["docId"]= doc.id;
+        console.log("validateSchema docId", doc.id);
+        objError["docId"]= doc[0].id;
         objError["valid"] =  arrayErrors.length === 0 ? true : false;
         objError["errorCount"]= arrayErrors.length;
 
@@ -188,21 +189,46 @@ app.post('/validateSchemaS2',async (req,res)=>{
 
             let newdocument = req.body;
             let respuesta=[];
+            let arrayDocuments=[];
+            let ids= [];
             if(Array.isArray(newdocument)){
                 for (let doc of newdocument){
+                    doc["id"]= "FAKEID";
                     respuesta.push(await validateSchema([doc],schemaS2,validacion));
+                    ids.push(doc.id);
+                    arrayDocuments.push(doc);
                 }
             }else{
+                newdocument["id"]= "FAKEID";
                 respuesta.push(await validateSchema([newdocument],schemaS2,validacion));
+                arrayDocuments.push(newdocument);
             }
 
-            data["tipoOperacion"]="POST";
+            for(let val of respuesta){
+                if(!val.valid){
+                    res.status(500).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
+                }
+            }
+
+            //se insertan
+            try {
+                let Spic = S2.model('Spic',spicSchema, 'spic');
+                let response;
+                response = await Spic.insertMany(arrayDocuments);
+                let detailObject= {};
+                detailObject["numeroRegistros"]= arrayDocuments.length;
+                res.status(200).json({message : "Se realizarón las inserciones correctamente", Status : 200 , response: response, detail: detailObject});
+            }catch (e) {
+                console.log(e);
+            }
+
+           /* data["tipoOperacion"]="POST";
             data["fechaOperacion"]= moment().format();
             data["usuario"]=req.body.request.user;
             data["numeroRegistros"]=1;
             data["sistema"]="S2";
-            registroBitacora(data);
-            res.status(200).json(respuesta);
+            registroBitacora(data);*/
+
         }
     }catch (e) {
         console.log(e);
@@ -338,6 +364,10 @@ app.post('/create/user',async (req,res)=>{
 
             try {
 
+                let fechaActual = moment();
+                req.body["fechaAlta"]= fechaActual.format();
+                req.body["vigenciaContrasena"] = fechaActual.add(3 , 'months').format().toString();
+                req.body["estatus"]=  true;
 
               await schemaUserCreate.concat(schemaUser).validate({ nombre : req.body.nombre,
                     apellidoUno : req.body.apellidoUno,
@@ -354,7 +384,11 @@ app.post('/create/user',async (req,res)=>{
                     fechaAlta:req.body.fechaAlta,
                     vigenciaContrasena: req.body.vigenciaContrasena
               });
+                 if(req.body.passwordConfirmation){
+                     delete req.body.passwordConfirmation;
+                 }
 
+                  console.log(req.body);
                   const nuevoUsuario = new User(req.body);
                   let response;
                   response = await nuevoUsuario.save();
@@ -367,123 +401,6 @@ app.post('/create/user',async (req,res)=>{
                 errorMessage["tipoError"] = e.type;
                 errorMessage["mensaje"] = e.message;
                 res.status(400).json(errorMessage);
-            }
-        }
-    }catch (e) {
-        console.log(e);
-    }
-});
-
-app.post('/updateS2Schema',async (req,res)=>{
-    try {
-        var code = validateToken(req);
-        if(code.code == 401){
-            res.status(401).json({code: '401', message: code.message});
-        }else if (code.code == 200 ){
-            let docSend={};
-            let values = req.body;
-            //validaciones
-            console.log("estamos en las validaciones ");
-            try {
-                await esquemaS2.validate(values);
-            }catch (e) {
-                let errorMessage = {};
-                errorMessage["errores"] = e.errors;
-                errorMessage["campo"]= e.path;
-                errorMessage["tipoError"] = e.type;
-                errorMessage["mensaje"] = e.message;
-                res.status(400).json(errorMessage);
-            }
-
-            docSend["id"]= values._id;
-            if(values.fechaCaptura){docSend["fechaCaptura"]= values.fechaCaptura;}
-            if(values.ejercicioFiscal){docSend["ejercicioFiscal"]= values.ejercicioFiscal;}
-            if(values.ramo){
-                let ramoObj = JSON.parse(values.ramo);
-                docSend["ramo"]= {clave:  parseInt(ramoObj.clave) , valor: ramoObj.valor };
-            }
-            if(values.nombres){docSend["nombres"]=values.nombres}
-            if(values.primerApellido){docSend["primerApellido"]=values.primerApellido}
-            if(values.segundoApellido){docSend["segundoApellido"]= values.segundoApellido}
-            if(values.genero){
-                docSend["genero"]= JSON.parse(values.genero);
-            }
-
-            let ObjInstitucionDepe = {};
-            if(values.idnombre){  ObjInstitucionDepe = {...ObjInstitucionDepe,nombre : values.idnombre } }
-            if(values.idclave){ObjInstitucionDepe = {...ObjInstitucionDepe,clave: values.idclave } }
-            if(values.idsiglas){ObjInstitucionDepe = {...ObjInstitucionDepe,siglas: values.idsiglas } }
-            docSend["institucionDependencia"] = ObjInstitucionDepe;
-
-
-            let objPuesto = {}
-            if(values.puestoNombre){objPuesto= {...objPuesto,nombre: values.puestoNombre}}
-            if(values.puestoNivel){objPuesto= {...objPuesto, nivel: values.puestoNivel}}
-            docSend["puesto"]= objPuesto;
-
-
-            if(values.tipoArea && values.tipoArea.length > 0 ){
-                docSend["tipoArea"]=JSON.parse("["+values.tipoArea+"]");
-            }
-            if(values.tipoProcedimiento && values.tipoProcedimiento.length > 0){
-                let ObjTipoProcedimiento= JSON.parse("["+values.tipoProcedimiento+"]");
-                docSend["tipoProcedimiento"]= getArrayFormatTipoProcedimiento(ObjTipoProcedimiento);
-            }
-            if(values.nivelResponsabilidad && values.nivelResponsabilidad.length > 0 ){
-                docSend["nivelResponsabilidad"] = JSON.parse("[" + values.nivelResponsabilidad + "]");
-            }
-
-            let objSuperiorInmediato = {};
-            if(values.sinombres){
-                objSuperiorInmediato = {...objSuperiorInmediato, nombres: values.sinombres}
-            }
-            if(values.siPrimerApellido){
-                objSuperiorInmediato = {...objSuperiorInmediato, primerApellido: values.siPrimerApellido}
-            }
-            if(values.siSegundoApellido){
-                objSuperiorInmediato = {...objSuperiorInmediato, segundoApellido : values.siSegundoApellido}
-            }
-            let puestoObj={};
-            if(values.siPuestoNombre){
-                puestoObj =  {...puestoObj,nombre:values.siPuestoNombre};
-            }
-            if(values.siPuestoNivel){
-                puestoObj =  {...puestoObj,nivel: values.siPuestoNivel};
-            }
-            if(values.siPuestoNombre || values.siPuestoNivel ){
-                objSuperiorInmediato = {...objSuperiorInmediato,puesto: puestoObj}
-            }
-
-            docSend["superiorInmediato"] = objSuperiorInmediato;
-
-            console.log("ya paso la validacion  "+ JSON.stringify(docSend));
-
-            let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
-            let data = yaml.safeLoad(fileContents);
-            let schemaS2 =  data.components.schemas.respSpic;
-            let validacion = new swaggerValidator.Handler();
-            let newdocument = docSend;
-            let respuesta = await validateSchema([newdocument],schemaS2,validacion);
-            if(respuesta.valid) {
-                try {
-                    docSend["_id"]= values._id;
-                    let Spic = S2.model('Spic',spicSchema, 'spic');
-                    let esquema = new Spic(docSend);
-                    console.log("IDDD"+ esquema);
-                    let response;
-                    if(req.body._id ){
-                        await Spic.findByIdAndDelete(values._id);
-                        response = await Spic.findByIdAndUpdate(values._id ,esquema, {upsert: true, new: true} ).exec();
-                        res.status(200).json(response);
-                    }else{
-                        res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
-                    }
-                }catch (e) {
-                    console.log(e);
-                }
-            }else{
-                console.log(respuesta);
-                res.status(400).json({message : "Error in validation openApi" , Status : 400, response : respuesta});
             }
         }
     }catch (e) {
@@ -670,6 +587,125 @@ app.delete('/deleteRecordS2',async (req,res)=>{
     }
 
 });
+
+
+app.post('/updateS2Schema',async (req,res)=>{
+    try {
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            let docSend={};
+            let values = req.body;
+            //validaciones
+            console.log("estamos en las validaciones ");
+            try {
+                await esquemaS2.validate(values);
+            }catch (e) {
+                let errorMessage = {};
+                errorMessage["errores"] = e.errors;
+                errorMessage["campo"]= e.path;
+                errorMessage["tipoError"] = e.type;
+                errorMessage["mensaje"] = e.message;
+                res.status(400).json(errorMessage);
+            }
+
+            docSend["id"]= values._id;
+            if(values.fechaCaptura){docSend["fechaCaptura"]= values.fechaCaptura;}
+            if(values.ejercicioFiscal){docSend["ejercicioFiscal"]= values.ejercicioFiscal;}
+            if(values.ramo){
+                let ramoObj = JSON.parse(values.ramo);
+                docSend["ramo"]= {clave:  parseInt(ramoObj.clave) , valor: ramoObj.valor };
+            }
+            if(values.nombres){docSend["nombres"]=values.nombres}
+            if(values.primerApellido){docSend["primerApellido"]=values.primerApellido}
+            if(values.segundoApellido){docSend["segundoApellido"]= values.segundoApellido}
+            if(values.genero){
+                docSend["genero"]= JSON.parse(values.genero);
+            }
+
+            let ObjInstitucionDepe = {};
+            if(values.idnombre){  ObjInstitucionDepe = {...ObjInstitucionDepe,nombre : values.idnombre } }
+            if(values.idclave){ObjInstitucionDepe = {...ObjInstitucionDepe,clave: values.idclave } }
+            if(values.idsiglas){ObjInstitucionDepe = {...ObjInstitucionDepe,siglas: values.idsiglas } }
+            docSend["institucionDependencia"] = ObjInstitucionDepe;
+
+
+            let objPuesto = {}
+            if(values.puestoNombre){objPuesto= {...objPuesto,nombre: values.puestoNombre}}
+            if(values.puestoNivel){objPuesto= {...objPuesto, nivel: values.puestoNivel}}
+            docSend["puesto"]= objPuesto;
+
+
+            if(values.tipoArea && values.tipoArea.length > 0 ){
+                docSend["tipoArea"]=JSON.parse("["+values.tipoArea+"]");
+            }
+            if(values.tipoProcedimiento && values.tipoProcedimiento.length > 0){
+                let ObjTipoProcedimiento= JSON.parse("["+values.tipoProcedimiento+"]");
+                docSend["tipoProcedimiento"]= getArrayFormatTipoProcedimiento(ObjTipoProcedimiento);
+            }
+            if(values.nivelResponsabilidad && values.nivelResponsabilidad.length > 0 ){
+                docSend["nivelResponsabilidad"] = JSON.parse("[" + values.nivelResponsabilidad + "]");
+            }
+
+            let objSuperiorInmediato = {};
+            if(values.sinombres){
+                objSuperiorInmediato = {...objSuperiorInmediato, nombres: values.sinombres}
+            }
+            if(values.siPrimerApellido){
+                objSuperiorInmediato = {...objSuperiorInmediato, primerApellido: values.siPrimerApellido}
+            }
+            if(values.siSegundoApellido){
+                objSuperiorInmediato = {...objSuperiorInmediato, segundoApellido : values.siSegundoApellido}
+            }
+            let puestoObj={};
+            if(values.siPuestoNombre){
+                puestoObj =  {...puestoObj,nombre:values.siPuestoNombre};
+            }
+            if(values.siPuestoNivel){
+                puestoObj =  {...puestoObj,nivel: values.siPuestoNivel};
+            }
+            if(values.siPuestoNombre || values.siPuestoNivel ){
+                objSuperiorInmediato = {...objSuperiorInmediato,puesto: puestoObj}
+            }
+
+            docSend["superiorInmediato"] = objSuperiorInmediato;
+
+            console.log("ya paso la validacion  "+ JSON.stringify(docSend));
+
+            let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
+            let data = yaml.safeLoad(fileContents);
+            let schemaS2 =  data.components.schemas.respSpic;
+            let validacion = new swaggerValidator.Handler();
+            let newdocument = docSend;
+            let respuesta = await validateSchema([newdocument],schemaS2,validacion);
+            if(respuesta.valid) {
+                try {
+                    docSend["_id"]= values._id;
+                    let Spic = S2.model('Spic',spicSchema, 'spic');
+                    let esquema = new Spic(docSend);
+                    console.log("IDDD"+ esquema);
+                    let response;
+                    if(req.body._id ){
+                        await Spic.findByIdAndDelete(values._id);
+                        response = await Spic.findByIdAndUpdate(values._id ,esquema, {upsert: true, new: true} ).exec();
+                        res.status(200).json(response);
+                    }else{
+                        res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+                    }
+                }catch (e) {
+                    console.log(e);
+                }
+            }else{
+                console.log(respuesta);
+                res.status(400).json({message : "Error in validation openApi" , Status : 400, response : respuesta});
+            }
+        }
+    }catch (e) {
+        console.log(e);
+    }
+});
+
 
 app.post('/getProviders',async (req,res)=>{
     try {
