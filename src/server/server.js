@@ -335,10 +335,9 @@ app.put('/edit/provider',async(req, res)=>{
                 if (req.body._id ) {
                     responce = await Provider.findByIdAndUpdate(req.body._id, nuevoProovedor).exec();
                     res.status(200).json(responce);
-                } else {
+                }else {
                     res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
                 }
-
             }catch (e) {
                 let errorMessage = {};
                 errorMessage["errores"] = e.errors;
@@ -363,33 +362,31 @@ app.post('/create/user',async (req,res)=>{
         }else if (code.code == 200 ){
 
             try {
-
                 let fechaActual = moment();
-                req.body["fechaAlta"]= fechaActual.format();
-                req.body["vigenciaContrasena"] = fechaActual.add(3 , 'months').format().toString();
-                req.body["estatus"]=  true;
+                let newBody = {...req.body ,fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
 
-              await schemaUserCreate.concat(schemaUser).validate({ nombre : req.body.nombre,
-                    apellidoUno : req.body.apellidoUno,
-                    apellidoDos : req.body.apellidoDos,
-                    cargo : req.body.cargo,
-                    correoElectronico : req.body.correoElectronico,
-                    telefono : req.body.telefono,
-                    extension : req.body.extension,
-                    usuario : req.body.usuario,
-                    constrasena : req.body.constrasena,
-                    sistemas : req.body.sistemas,
-                    proveedorDatos : req.body.proveedorDatos,
-                    estatus : req.body.estatus,
-                    fechaAlta:req.body.fechaAlta,
-                    vigenciaContrasena: req.body.vigenciaContrasena
+
+              await schemaUserCreate.concat(schemaUser).validate({ nombre : newBody.nombre,
+                    apellidoUno : newBody.apellidoUno,
+                    apellidoDos : newBody.apellidoDos,
+                    cargo : newBody.cargo,
+                  correoElectronico : newBody.correoElectronico,
+                  telefono : newBody.telefono,
+                  extension : newBody.extension,
+                  usuario : newBody.usuario,
+                  constrasena : newBody.constrasena,
+                  sistemas : newBody.sistemas,
+                  proveedorDatos : newBody.proveedorDatos,
+                  estatus : newBody.estatus,
+                  fechaAlta:newBody.fechaAlta,
+                  vigenciaContrasena: newBody.vigenciaContrasena
               });
-                 if(req.body.passwordConfirmation){
-                     delete req.body.passwordConfirmation;
+                 if(newBody.passwordConfirmation){
+                     delete newBody.passwordConfirmation;
                  }
 
-                  console.log(req.body);
-                  const nuevoUsuario = new User(req.body);
+                  console.log(newBody);
+                  const nuevoUsuario = new User(newBody);
                   let response;
                   response = await nuevoUsuario.save();
                   res.status(200).json(response);
