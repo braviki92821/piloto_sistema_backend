@@ -191,15 +191,18 @@ app.post('/validateSchemaS2',async (req,res)=>{
             let respuesta=[];
             let arrayDocuments=[];
             let ids= [];
+            let c1=1;
             if(Array.isArray(newdocument)){
                 for (let doc of newdocument){
-                    doc["id"]= "FAKEID";
+                    doc["id"]= c1.toString();
+                    c1++;
                     respuesta.push(await validateSchema([doc],schemaS2,validacion));
                     ids.push(doc.id);
                     arrayDocuments.push(doc);
                 }
             }else{
-                newdocument["id"]= "FAKEID";
+                newdocument["id"]= c1.toString();
+                c1++;
                 respuesta.push(await validateSchema([newdocument],schemaS2,validacion));
                 arrayDocuments.push(newdocument);
             }
