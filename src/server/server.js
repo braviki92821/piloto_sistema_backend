@@ -571,6 +571,7 @@ app.post('/listSchemaS2',async (req,res)=> {
 app.delete('/deleteRecordS2',async (req,res)=>{
     try {
         var code = validateToken(req);
+        var bitacora=[];
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
@@ -579,7 +580,12 @@ app.delete('/deleteRecordS2',async (req,res)=>{
                const deletedRecord =  await Spic
                    .findByIdAndDelete( req.body.request._id)
                    .catch(err => res.status(400).json({message : err.message , code: '400'})).then();
-
+                bitacora["tipoOperacion"]="DELETE";
+                bitacora["fechaOperacion"]= moment().format();
+                bitacora["usuario"]=req.body.request.usuario;
+                bitacora["numeroRegistros"]=1;
+                bitacora["sistema"]="S2";
+                registroBitacora(bitacora);
                 res.status(200).json({message : "OK" , Status : 200, response : deletedRecord} );
             }else{
                 res.status(500).json({message:"Datos incompletos", code:'500'});
