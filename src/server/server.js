@@ -204,22 +204,28 @@ app.post('/validateSchemaS2',async (req,res)=>{
                 arrayDocuments.push(newdocument);
             }
 
+            let wasInvalid;
+
             for(let val of respuesta){
                 if(!val.valid){
-                    res.status(500).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
+                    wasInvalid= true;
                 }
             }
 
-            //se insertan
-            try {
-                let Spic = S2.model('Spic',spicSchema, 'spic');
-                let response;
-                response = await Spic.insertMany(arrayDocuments);
-                let detailObject= {};
-                detailObject["numeroRegistros"]= arrayDocuments.length;
-                res.status(200).json({message : "Se realizarón las inserciones correctamente", Status : 200 , response: response, detail: detailObject});
-            }catch (e) {
-                console.log(e);
+            if(wasInvalid){
+                res.status(200).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
+            }else{
+                //se insertan
+                try {
+                    let Spic = S2.model('Spic',spicSchema, 'spic');
+                    let response;
+                    response = await Spic.insertMany(arrayDocuments);
+                    let detailObject= {};
+                    detailObject["numeroRegistros"]= arrayDocuments.length;
+                    res.status(200).json({message : "Se realizarón las inserciones correctamente", Status : 200 , response: response, detail: detailObject});
+                }catch (e) {
+                    console.log(e);
+                }
             }
 
            /* data["tipoOperacion"]="POST";
