@@ -154,7 +154,6 @@ async function validateSchema(doc,schema,validacion){
         let objError={};
         let arrayErrors = result.errorsWithStringTypes();
         let textErrors;
-        console.log("validateSchema docId", doc.id);
         objError["docId"]= doc[0].id;
         objError["valid"] =  arrayErrors.length === 0 ? true : false;
         objError["errorCount"]= arrayErrors.length;
@@ -179,6 +178,8 @@ async function validateSchema(doc,schema,validacion){
 app.post('/validateSchemaS2',async (req,res)=>{
     try {
         var code = validateToken(req);
+        var code = validateToken(req);
+        var usuario=req.headers.usuario;
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
@@ -225,18 +226,18 @@ app.post('/validateSchemaS2',async (req,res)=>{
                     response = await Spic.insertMany(arrayDocuments);
                     let detailObject= {};
                     detailObject["numeroRegistros"]= arrayDocuments.length;
+                    var bitacora=[];
+                    bitacora["tipoOperacion"]="CREATE";
+                    bitacora["fechaOperacion"]= moment().format();
+                    bitacora["usuario"]=usuario;
+                    bitacora["numeroRegistros"]=arrayDocuments.length;
+                    bitacora["sistema"]="S2";
+                    registroBitacora(bitacora);
                     res.status(200).json({message : "Se realizarón las inserciones correctamente", Status : 200 , response: response, detail: detailObject});
                 }catch (e) {
                     console.log(e);
                 }
             }
-
-           /* data["tipoOperacion"]="POST";
-            data["fechaOperacion"]= moment().format();
-            data["usuario"]=req.body.request.user;
-            data["numeroRegistros"]=1;
-            data["sistema"]="S2";
-            registroBitacora(data);*/
 
         }
     }catch (e) {
@@ -394,7 +395,6 @@ app.post('/create/user',async (req,res)=>{
                      delete newBody.passwordConfirmation;
                  }
 
-                  console.log(newBody);
                   const nuevoUsuario = new User(newBody);
                   let response;
                   response = await nuevoUsuario.save();
@@ -416,7 +416,7 @@ app.post('/create/user',async (req,res)=>{
 
 app.put('/edit/user',async (req,res)=>{
     try {
-        console.log(req.body);
+
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
@@ -508,6 +508,8 @@ app.post('/getUsersFull',async (req,res)=>{
 app.post('/insertS2Schema',async (req,res)=>{
     try {
         var code = validateToken(req);
+        var usuario=req.body.usuario;
+        delete req.body.usuario;
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
@@ -521,19 +523,24 @@ app.post('/insertS2Schema',async (req,res)=>{
                 try {
                     let Spic = S2.model('Spic',spicSchema, 'spic');
                     delete req.body.id;
-                    console.log("bodyy "+req.body);
                     let esquema= new Spic(req.body);
                     const result = await esquema.save();
                     let objResponse= {};
 
                     objResponse["results"]= result;
-                    console.log(objResponse);
+                    var bitacora=[];
+                    bitacora["tipoOperacion"]="CREATE";
+                    bitacora["fechaOperacion"]= moment().format();
+                    bitacora["usuario"]=usuario;
+                    bitacora["numeroRegistros"]=1;
+                    bitacora["sistema"]="S2";
+                    registroBitacora(bitacora);
                     res.status(200).json(objResponse);
                 }catch (e) {
                     console.log(e);
                 }
             }else{
-                console.log(respuesta);
+
                 res.status(400).json({message : "Error in validation" , Status : 400, response : respuesta});
             }
         }
@@ -696,11 +703,17 @@ app.post('/updateS2Schema',async (req,res)=>{
                     docSend["_id"]= values._id;
                     let Spic = S2.model('Spic',spicSchema, 'spic');
                     let esquema = new Spic(docSend);
-                    console.log("IDDD"+ esquema);
                     let response;
                     if(req.body._id ){
                         await Spic.findByIdAndDelete(values._id);
                         response = await Spic.findByIdAndUpdate(values._id ,esquema, {upsert: true, new: true} ).exec();
+                        var bitacora=[];
+                        bitacora["tipoOperacion"]="UPDATE";
+                        bitacora["fechaOperacion"]= moment().format();
+                        bitacora["usuario"]=req.body.usuario;
+                        bitacora["numeroRegistros"]=1;
+                        bitacora["sistema"]="S2";
+                        registroBitacora(bitacora);
                         res.status(200).json(response);
                     }else{
                         res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
@@ -908,8 +921,7 @@ app.post('/getBitacora',async (req,res)=>{
                     let rowExtend = _.extend({fecha: fecha,tipo:tipo, sistema_label:sistema_label}, row.toObject());
                     return rowExtend;
                 });
-                console.log(strippedRows);
-                //console.log(paginationResult);
+
                 paginationResult["resultado"]=strippedRows;
             }
 
@@ -920,7 +932,6 @@ app.post('/getBitacora',async (req,res)=>{
             objResponse["results"]= paginationResult["resultado"];
 
             res.status(200).json(objResponse);
-            //console.log(objResponse);
         }
     }catch (e) {
         console.log(e);
