@@ -20,6 +20,7 @@ var _ = require('underscore');
 var jwt = require('jsonwebtoken');
 import regeneratorRuntime from "regenerator-runtime";
 import * as Console from "console";
+import { SMTPClient } from 'emailjs';
 
 
 //connection mongo db
@@ -865,6 +866,10 @@ app.post('/getBitacora',async (req,res)=>{
         let objResponse= {};
         let strippedRows;
 
+        if(fechaInicial=="" || fechaFinal==""){
+            res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+        }
+
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
@@ -876,19 +881,22 @@ app.post('/getBitacora',async (req,res)=>{
             console.log({page :page , limit: pageSize, sort: sortObj});
             if(((typeof req.body.sistema!="undefined")) && ((typeof req.body.usuarioBitacora !="undefined"))){
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $in : req.body.sistema }});
+                formato(paginationResult);
             }else if((typeof req.body.sistema!="undefined")){
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$in : req.body.sistema }});
+                formato(paginationResult);
             }else if((typeof req.body.usuarioBitacora!="undefined")){
-                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: req.body.usuarioBitacora});
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: { $eq : req.body.usuarioBitacora}});
+                formato(paginationResult);
             }else{
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }});
+                formato(paginationResult);
+            }
+
+            function formato(paginationResult){
                 moment.locale('es');
-
-
-
                 strippedRows = _.map(paginationResult, function (row) {
                     var fecha=moment(row.fechaOperacion).format('LLLL');
-
                     var sistema=row.sistema;
                     var sistema_label="";
                     var tipoOperacion=row.tipoOperacion;
@@ -903,7 +911,6 @@ app.post('/getBitacora',async (req,res)=>{
                     if(sistema=="S3P"){
                         sistema_label="Sistema de los Particulares Sancionados.";
                     }
-
                     if(tipoOperacion=="CREATE"){
                         tipo="Alta";
                     }
@@ -917,7 +924,6 @@ app.post('/getBitacora',async (req,res)=>{
                         tipo="Consulta";
                     }
 
-
                     let rowExtend = _.extend({fecha: fecha,tipo:tipo, sistema_label:sistema_label}, row.toObject());
                     return rowExtend;
                 });
@@ -928,7 +934,7 @@ app.post('/getBitacora',async (req,res)=>{
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult;
             let objResponse= {};
-            objResponse["pagination"] = objpagination;
+            //objResponse["pagination"] = objpagination;
             objResponse["results"]= paginationResult["resultado"];
 
             res.status(200).json(objResponse);
@@ -937,4 +943,72 @@ app.post('/getBitacora',async (req,res)=>{
         console.log(e);
     }
 
+});
+
+app.post('/resetpassword',async (req,res)=>{
+    try {
+        let correo= req.body.correo;
+        const correoValidar = Yup.string().email().required();
+        const validacion=(await correoValidar.isValid(correo));
+
+        if(validacion==false){
+            res.status(200).json({message : "Correo electrónico inválido." , Status : 500});
+            return false;
+        }
+
+        const estatus = await User.find({correoElectronico: correo, estatus:false}).then();
+
+        if(estatus.length>0){
+            res.status(200).json({message : "El usuario está dado de baja en el sistema." , Status : 500});
+            return false;
+        }
+
+        const result = await User.find({correoElectronico: correo}).then();
+
+        if(result.length==0){
+            res.status(200).json({message : "El Correo electrónico que ingresaste no existe." , Status : 500});
+            return false;
+        }
+
+        var generator = require('generate-password');
+
+        var password = generator.generate({
+            length: 8,
+            numbers: true,
+            symbols:true,
+            lowercase:true,
+            uppercase:true,
+            strict:true
+        });
+
+        const client = new SMTPClient({
+            user: 'soporteportalpdn@gmail.com',
+            password: 'pdndigital-2021',
+            host: 'smtp.gmail.com',
+            ssl: true,
+        });
+
+        const message = {
+            text: 'Enviamos tu nueva contraseña del portal PDN',
+            from: 'soporteportalpdn@gmail.com',
+            to: 'franciscoramirezvalerio@gmail.com',
+            subject: 'Enviamos tu nueva contraseña del portal PDN',
+            attachment: [
+                { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+password+'</h3></b></i></html>', alternative: true }
+            ],
+        };
+
+// send the message and get a callback with an error or details of the message that was sent
+        client.send(message, function (err, message) {
+            if(err!=null){
+                res.status(200).json({message : "Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador." , Status : 500});
+            }
+        });
+
+        //let respuesta= await User.updateOne({"correoElectronico": correo },{$set:{ "contrasena": password }});
+        res.status(200).json({message : "Se ha enviado tu nueva contraseña al correo electrónico proporcionado." , Status : 200});
+
+        }catch (e) {
+        console.log(e);
+    }
 });
