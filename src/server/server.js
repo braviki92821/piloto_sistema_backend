@@ -1559,6 +1559,7 @@ app.post('/getBitacora',async (req,res)=>{
             }else if((typeof req.body.usuarioBitacora!="undefined")){
                 //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: { $eq : req.body.usuarioBitacora}});
                 var paginationResult = await Bitacora.aggregate([
+                    { $match: { usuario: {  $eq:  { $toObjectId: "602d90e709936454e6e516b8"}   }}},
                     {
                         $lookup: {
                             from: "usuarios",
@@ -1566,14 +1567,6 @@ app.post('/getBitacora',async (req,res)=>{
                             foreignField: "_id",
                             as: "Data"
                         }
-                    },
-                    {
-                        $match: {
-
-                            "usuario": { $eq:{
-                                    $toObjectId: req.body.usuarioBitacora
-                            } }}
-
                     }]);
                 //formato(paginationResult);
                 console.log(req.body.usuarioBitacora);
