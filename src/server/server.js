@@ -1105,6 +1105,72 @@ app.delete('/deleteRecordS3P',async (req,res)=>{
 
 });
 
+app.post('/updateS3PSchema',async (req,res)=>{
+    try {
+
+        var code = validateToken(req);
+        var usuario = req.body.usuario;
+        delete req.body.usuario;
+        if (code.code == 401) {
+            res.status(401).json({code: '401', message: code.message});
+        } else if (code.code == 200) {
+            let id = req.body._id;
+            delete req.body._id;
+            let values = req.body;
+            values['fechaCaptura'] = moment().format();
+            values["id"] = "FAKEID";
+
+            let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3p.yaml'), 'utf8');
+            let data = yaml.safeLoad(fileContents);
+            let schemaResults = data.components.schemas.resParticularesSancionados.properties.results;
+            schemaResults.items.properties.particularSancionado.properties.domicilioExtranjero.properties.pais =  data.components.schemas.pais;
+            schemaResults.items.properties.tipoSancion = data.components.schemas.tipoSancion;
+            let schemaS3P = schemaResults;
+
+
+            let validacion = new swaggerValidator.Handler();
+            let respuesta = await validateSchema([values], schemaS3P, validacion);
+            //se insertan
+
+            if (respuesta.valid) {
+                try {
+                    values["_id"] = id;
+                    let psancionados = S3P.model('Psancionados', psancionadosSchema, 'psancionados');
+                    let esquema = new psancionados(values);
+                    let response;
+                    if (values._id) {
+                        await psancionados.findByIdAndDelete(values._id);
+                        response = await psancionados.findByIdAndUpdate(values._id, esquema, {
+                            upsert: true,
+                            new: true
+                        }).exec();
+                        let objResponse = {};
+                        objResponse["results"] = response;
+                        var bitacora = [];
+                        bitacora["tipoOperacion"] = "UPDATE";
+                        bitacora["fechaOperacion"] = moment().format();
+                        bitacora["usuario"] = usuario;
+                        bitacora["numeroRegistros"] = 1;
+                        bitacora["sistema"] = "S3P";
+                        registroBitacora(bitacora);
+                        res.status(200).json(response);
+                    } else {
+                        res.status(500).json({message: "Error : Datos incompletos", Status: 500});
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+
+            } else {
+                console.log(respuesta);
+                res.status(400).json({message: "Error in validation openApi", Status: 400, response: respuesta});
+            }
+        }
+    }catch (e) {
+        console.log(e);
+    }
+});
+
 app.post('/updateS3SSchema',async (req,res)=>{
     try {
         var code = validateToken(req);
