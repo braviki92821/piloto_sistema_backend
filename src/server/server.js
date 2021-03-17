@@ -873,8 +873,9 @@ app.post('/getBitacora',async (req,res)=>{
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
-            console.log({page :page , limit: pageSize, sort: sortObj});
+
             if(((typeof req.body.sistema!="undefined")) && ((typeof req.body.usuarioBitacora !="undefined"))){
+<<<<<<< Updated upstream
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $in : req.body.sistema }});
             }else if((typeof req.body.sistema!="undefined")){
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$in : req.body.sistema }});
@@ -882,6 +883,89 @@ app.post('/getBitacora',async (req,res)=>{
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: req.body.usuarioBitacora});
             }else{
                 var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }});
+=======
+                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $in : req.body.sistema }});
+                var paginationResult = await Bitacora.aggregate([
+                    {
+                        $lookup: {
+                            from: "usuarios",
+                            localField:  "usuario" ,
+                            foreignField: "_id",
+                            as: "Data"
+                        }
+                    },
+                    {
+                        $match: {
+                            "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal },
+                            "usuario": { $eq : req.body.usuarioBitacora },
+                            "sistema": { $in : req.body.sistema }}
+                    }]);
+                console.log("Por fechas, POR USUARIO, POR SISTEMAS");
+                //formato(paginationResult);
+            }else if((typeof req.body.sistema!="undefined")){
+                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$in : req.body.sistema }});
+                var paginationResult = await Bitacora.aggregate([
+                    {
+                        $lookup: {
+                            from: "usuarios",
+                            localField:  "usuario" ,
+                            foreignField: "_id",
+                            as: "Data"
+                        }
+                    },
+                    {
+                        $match: {
+                            "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal },
+                            "sistema": { $in : req.body.sistema }}
+                    }]);
+                console.log("Por SISTEMAS");
+                //formato(paginationResult);
+            }else if((typeof req.body.usuarioBitacora!="undefined")){
+                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: { $eq : req.body.usuarioBitacora}});
+                var paginationResult = await Bitacora.aggregate([
+                    {
+                        $lookup: {
+                            from: "usuarios",
+                            localField:  "usuario" ,
+                            foreignField: "_id",
+                            as: "Data"
+                        }
+                    },
+                    {
+                        $match: {
+
+                            "usuario": { $eq:{
+                                    $toObjectId: req.body.usuarioBitacora
+                            } }}
+
+                    }]);
+                //formato(paginationResult);
+                console.log(req.body.usuarioBitacora);
+                console.log(paginationResult);
+                console.log("En el susuario ");
+            }else{
+                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }});
+                //formato(paginationResult);
+
+            var paginationResult = await Bitacora.aggregate([
+                {
+                    $lookup: {
+                        from: "usuarios",
+                        localField:  "usuario" ,
+                        foreignField: "_id",
+                        as: "Data"
+                    }
+                },
+                {
+                    $match: { "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal } }
+                }]);
+            console.log("Por fechas");
+            }
+
+            formato(paginationResult)
+
+            function formato(paginationResult){
+>>>>>>> Stashed changes
                 moment.locale('es');
 
 
@@ -917,8 +1001,17 @@ app.post('/getBitacora',async (req,res)=>{
                         tipo="Consulta";
                     }
 
+<<<<<<< Updated upstream
 
                     let rowExtend = _.extend({fecha: fecha,tipo:tipo, sistema_label:sistema_label}, row.toObject());
+=======
+                    var nombre_usuario="";
+                    _.map(row.Data, function (item) {
+                        nombre_usuario=item.nombre+" "+item.apellidoUno+" "+item.apellidoDos;
+                    });
+
+                    let rowExtend = _.extend({fecha: fecha,tipo:tipo, sistema_label:sistema_label,numeroRegistros:row.numeroRegistros, nombre:nombre_usuario});
+>>>>>>> Stashed changes
                     return rowExtend;
                 });
 
