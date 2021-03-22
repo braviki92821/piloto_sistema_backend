@@ -584,7 +584,7 @@ app.post('/create/user',async (req,res)=>{
                   constrasena : password,
                   sistemas : newBody.sistemas,
                   proveedorDatos : newBody.proveedorDatos,
-                  estatus : newBody.estatus,
+                  estatus : true,
                   fechaAlta:newBody.fechaAlta,
                   vigenciaContrasena: newBody.vigenciaContrasena,
                   rol: "2"
@@ -932,7 +932,6 @@ app.post('/listSchemaS2',async (req,res)=> {
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
 
-            console.log({page :page , limit: pageSize, sort: sortObj, query: query});
             const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult.docs;
@@ -1399,7 +1398,7 @@ app.post('/getProviders',async (req,res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
-            const result = await Provider.find({fechaBaja: null}).then();
+            const result = await Provider.find({fechaBaja: null, estatus:true}).then();
             let objResponse = {};
 
             try {
@@ -1530,7 +1529,6 @@ app.post('/getCatalogsLocalidadesPorEstado',async (req,res)=>{
         let idMunicipio= req.body.idMunicipio;
         let objMunicipio;
         try {
-            console.log(idMunicipio);
             objMunicipio= JSON.parse(idMunicipio);
         }catch (e) {
             console.log(e);
@@ -1586,26 +1584,6 @@ app.post('/getBitacora',async (req,res)=>{
             let query = req.body.query === undefined ? {} : req.body.query;
 
             if(((typeof req.body.sistema!="undefined")) && ((typeof req.body.usuarioBitacora !="undefined"))){
-                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }, usuario: { $eq : req.body.usuarioBitacora }, sistema: { $in : req.body.sistema }});
-                var paginationResult = await Bitacora.aggregate([
-                    {
-                        $lookup: {
-                            from: "usuarios",
-                            localField:  "usuario" ,
-                            foreignField: "_id",
-                            as: "Data"
-                        }
-                    },
-                    {
-                        $match: {
-                            "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal },
-                            "usuario": { $eq : req.body.usuarioBitacora },
-                            "sistema": { $in : req.body.sistema }}
-                    }]);
-                console.log("Por fechas, POR USUARIO, POR SISTEMAS");
-                //formato(paginationResult);
-            }else if((typeof req.body.sistema!="undefined")){
-                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal },sistema: {$in : req.body.sistema }});
                 var paginationResult = await Bitacora.aggregate([
                     {
                         $lookup: {
@@ -1620,41 +1598,54 @@ app.post('/getBitacora',async (req,res)=>{
                             "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal },
                             "sistema": { $in : req.body.sistema }}
                     }]);
-                console.log("Por SISTEMAS");
-                //formato(paginationResult);
-            }else if((typeof req.body.usuarioBitacora!="undefined")){
-                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }, usuario: { $eq : req.body.usuarioBitacora}});
-                var paginationResult = await Bitacora.aggregate([
-                    { $match: { usuario: {  $eq:  { $toObjectId: "602d90e709936454e6e516b8"}   }}},
-                    {
-                        $lookup: {
-                            from: "usuarios",
-                            localField:  "usuario" ,
-                            foreignField: "_id",
-                            as: "Data"
-                        }
-                    }]);
-                //formato(paginationResult);
-                console.log(req.body.usuarioBitacora);
-                console.log(paginationResult);
-                console.log("En el susuario ");
-            }else{
-                //var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte : fechaFinal }});
-                //formato(paginationResult);
-
-            var paginationResult = await Bitacora.aggregate([
-                {
-                    $lookup: {
-                        from: "usuarios",
-                        localField:  "usuario" ,
-                        foreignField: "_id",
-                        as: "Data"
+                var us=await User.findById(req.body.usuarioBitacora);
+                var arrusuarios=[];
+                _.map(paginationResult, function (item) {
+                    if(item.usuario==req.body.usuarioBitacora){
+                        arrusuarios.push({"tipoOperacion":item.tipoOperacion,"fechaOperacion":item.fechaOperacion,"sistema":item.sistema,"numeroRegistros":item.numeroRegistros, "idUsuario":item.usuario, "Data":[{"usuario":us.usuario}]});
                     }
-                },
-                {
-                    $match: { "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal } }
-                }]);
-            console.log("Por fechas");
+                });
+                paginationResult=arrusuarios;
+            }else if((typeof req.body.sistema!="undefined")){
+                var paginationResult = await Bitacora.aggregate([
+                    {
+                        $lookup: {
+                            from: "usuarios",
+                            localField:  "usuario" ,
+                            foreignField: "_id",
+                            as: "Data"
+                        }
+                    },
+                    {
+                        $match: {
+                            "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal },
+                            "sistema": { $in : req.body.sistema }}
+                    }]);
+
+            }else if((typeof req.body.usuarioBitacora!="undefined")){
+                var paginationResult = await Bitacora.find({fechaOperacion: { $gte: fechaInicial, $lte :fechaFinal }});
+                var us=await User.findById(req.body.usuarioBitacora);
+                var arrusuarios=[];
+                _.map(paginationResult, function (item) {
+                    if(item.usuario==req.body.usuarioBitacora){
+                        arrusuarios.push({"tipoOperacion":item.tipoOperacion,"fechaOperacion":item.fechaOperacion,"sistema":item.sistema,"numeroRegistros":item.numeroRegistros, "idUsuario":item.usuario, "Data":[{"usuario":us.usuario}]});
+                    }
+                });
+                paginationResult=arrusuarios;
+            }else{
+
+                var paginationResult = await Bitacora.aggregate([
+                    {
+                        $lookup: {
+                            from: "usuarios",
+                            localField:  "usuario" ,
+                            foreignField: "_id",
+                            as: "Data"
+                        }
+                    },
+                    {
+                        $match: { "fechaOperacion": {  $gte: fechaInicial, $lte : fechaFinal } }
+                    }]);
             }
 
             formato(paginationResult)
@@ -1692,7 +1683,7 @@ app.post('/getBitacora',async (req,res)=>{
 
                     var nombre_usuario="";
                     _.map(row.Data, function (item) {
-                        nombre_usuario=item.nombre+" "+item.apellidoUno+" "+item.apellidoDos;
+                        nombre_usuario=item.usuario;
                     });
 
                     let rowExtend = _.extend({fecha: fecha,tipo:tipo, sistema_label:sistema_label,numeroRegistros:row.numeroRegistros, nombre:nombre_usuario});
@@ -1713,6 +1704,7 @@ app.post('/getBitacora',async (req,res)=>{
     }catch (e) {
         console.log(e);
     }
+
 });
 
 app.post('/resetpassword',async (req,res)=>{
@@ -1759,12 +1751,12 @@ app.post('/resetpassword',async (req,res)=>{
         });
 
         const message = {
-            text: 'Enviamos tu nueva contraseña del portal PDN',
+            text: ' Bienvenido al Sistema de Carga de datos S2 y S3',
             from: 'soporteportalpdn@gmail.com',
             to: correo,
-            subject: 'Enviamos tu nueva contraseña del portal PDN',
+            subject: ' Bienvenido al Sistema de Carga de datos S2 y S3',
             attachment: [
-                { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+password+'</h3></b></i></html>', alternative: true }
+                { data: '<html>Te enviamos tu contraseña para que puedas acceder al sistema, recuerda que debes cambiarla inmediatemente. <br><i><b><h3>Contraseña:'+password+'</h3></b></i></html>', alternative: true }
             ],
         };
 
@@ -1779,7 +1771,7 @@ app.post('/resetpassword',async (req,res)=>{
         const respuesta= await User.updateOne({correoElectronico: correo },{constrasena: password ,contrasenaNueva:true,vigenciaContrasena : fechaActual.add(3 , 'months').format().toString()});
         res.status(200).json({message : "Se ha enviado tu nueva contraseña al correo electrónico proporcionado." , Status : 200});
 
-        }catch (e) {
+    }catch (e) {
         console.log(e);
     }
 });
