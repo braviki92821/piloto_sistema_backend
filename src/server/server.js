@@ -487,7 +487,7 @@ app.post('/create/provider',async(req, res)=>{
                     dependencia: req.body.dependencia,
                     sistemas : req.body.sistemas,
                     estatus : true,
-                    fechaAlta: req.body.fechaAlta
+                    fechaAlta: moment().format(),
                 });
                 req.body["estatus"]=true;
 
@@ -524,7 +524,7 @@ app.put('/edit/provider',async(req, res)=>{
                     sistemas: req.body.sistemas,
                     estatus: req.body.estatus,
                     fechaAlta: req.body.fechaAlta,
-                    fechaActualizacion: req.body.fechaActualizacion
+                    fechaActualizacion: moment().format(),
                 });
 
                 const nuevoProovedor = new Provider(req.body);
