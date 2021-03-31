@@ -10,6 +10,7 @@ import {psancionadosSchema} from './schemas/model.s3p';
 import Provider from './schemas/model.proovedor';
 import Catalog from './schemas/model.catalog';
 import Bitacora from './schemas/model.bitacora';
+import proveedorRegistros from './schemas/model.proveedorRegistros';
 import moment from "moment";
 const mongoose = require('mongoose');
 const yaml = require('js-yaml')
@@ -754,6 +755,10 @@ app.post('/insertS2Schema',async (req,res)=>{
                     let esquema= new Spic(req.body);
                     const result = await esquema.save();
                     let objResponse= {};
+                    var datausuario=await User.findById(usuario);
+
+                    const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:result._id, sistema:"S2"});
+                    var resp = await proveedorRegistros1.save();
 
                     objResponse["results"]= result;
                     var bitacora=[];
@@ -811,6 +816,9 @@ app.post('/insertS3SSchema',async (req,res)=>{
                     const result = await esquema.save();
                     let objResponse= {};
                     objResponse["results"]= result;
+                    var datausuario=await User.findById(usuario);
+                    const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:result._id, sistema:"S3S"});
+                    var resp = await proveedorRegistros1.save();
                     var bitacora=[];
                     bitacora["tipoOperacion"]="CREATE";
                     bitacora["fechaOperacion"]= moment().format();
@@ -869,6 +877,11 @@ app.post('/insertS3PSchema',async (req,res)=>{
                     const result = await esquema.save();
                     let objResponse= {};
                     objResponse["results"]= result;
+                    var datausuario=await User.findById(usuario);
+
+                    const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:result._id, sistema:"S3P"});
+                    var resp = await proveedorRegistros1.save();
+
                     var bitacora=[];
                     bitacora["tipoOperacion"]="CREATE";
                     bitacora["fechaOperacion"]= moment().format();
@@ -1813,9 +1826,9 @@ app.post('/validationpassword',async (req,res)=>{
             const result=await User.findById(id_usuario).exec();
 
             if(result.contrasenaNueva===true){
-                res.status(200).json({message : "Necesitas cambiar tu contraseña" , Status : 500, contrasenaNueva:true, rol:result.rol, sistemas:result.sistemas});
+                res.status(200).json({message : "Necesitas cambiar tu contraseña" , Status : 500, contrasenaNueva:true, rol:result.rol, sistemas:result.sistemas, proveedor:result.proveedorDatos});
             }else{
-                res.status(200).json({message : "Tu contraseña está al día." , Status : 200, contrasenaNueva:false, rol:result.rol, sistemas:result.sistemas});
+                res.status(200).json({message : "Tu contraseña está al día." , Status : 200, contrasenaNueva:false, rol:result.rol, sistemas:result.sistemas, proveedor:result.proveedorDatos});
             }
 
 
@@ -1825,4 +1838,21 @@ app.post('/validationpassword',async (req,res)=>{
 
     }
 
+});
+
+app.post('/getrecordsbysystem',async (req,res)=>{
+    try {
+        var code = validateToken(req);
+        if(code.code == 401){
+            res.status(401).json({code: '401', message: code.message});
+        }else if (code.code == 200 ){
+            var sistema=req.body.sistema;
+            const result = await proveedorRegistros.find({sistema: sistema}).then();
+            let objResponse= {};
+            objResponse["results"]= result;
+            res.status(200).json(objResponse);
+        }
+    }catch (e) {
+        console.log(e);
+    }
 });
