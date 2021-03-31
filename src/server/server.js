@@ -282,6 +282,12 @@ app.post('/validateSchemaS2',async (req,res)=>{
                     response = await Spic.insertMany(arrayDocuments);
                     let detailObject= {};
                     detailObject["numeroRegistros"]= arrayDocuments.length;
+
+                    var datausuario=await User.findById(usuario);
+                    response.map(async(row)=>{
+                        const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:row._id, sistema:"S2"});
+                        var resp = await proveedorRegistros1.save();
+                    });
                     var bitacora=[];
                     bitacora["tipoOperacion"]="CREATE";
                     bitacora["fechaOperacion"]= moment().format();
@@ -304,6 +310,7 @@ app.post('/validateSchemaS2',async (req,res)=>{
 app.post('/validateSchemaS3S',async (req,res)=>{
     try {
         var code = validateToken(req);
+        var usuario=req.headers.usuario;
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200){
@@ -352,6 +359,18 @@ app.post('/validateSchemaS3S',async (req,res)=>{
                     let sancionados = S3S.model('Ssancionados', ssancionadosSchema, 'ssancionados');
                     let response;
                     response = await sancionados.insertMany(arrayDocuments);
+                    var datausuario=await User.findById(usuario);
+                    response.map(async(row)=>{
+                        const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:row._id, sistema:"S3S"});
+                        var resp = await proveedorRegistros1.save();
+                    });
+                    var bitacora=[];
+                    bitacora["tipoOperacion"]="CREATE";
+                    bitacora["fechaOperacion"]= moment().format();
+                    bitacora["usuario"]=usuario;
+                    bitacora["numeroRegistros"]=arrayDocuments.length;
+                    bitacora["sistema"]="S3S";
+                    registroBitacora(bitacora);
                     let detailObject= {};
                     detailObject["numeroRegistros"]= arrayDocuments.length;
                     res.status(200).json({message : "Se realizarón las inserciones correctamente", Status : 200 , response: response, detail: detailObject});
@@ -368,6 +387,7 @@ app.post('/validateSchemaS3S',async (req,res)=>{
 app.post('/validateSchemaS3P',async (req,res)=>{
     try {
         var code = validateToken(req);
+        var usuario=req.headers.usuario;
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200){
@@ -419,6 +439,18 @@ app.post('/validateSchemaS3P',async (req,res)=>{
                     let psancionados = S3P.model('Psancionados', psancionadosSchema, 'psancionados');
                     let response;
                     response = await psancionados.insertMany(arrayDocuments);
+                    var datausuario=await User.findById(usuario);
+                    response.map(async(row)=>{
+                        const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:row._id, sistema:"S3P"});
+                        var resp = await proveedorRegistros1.save();
+                    });
+                    var bitacora=[];
+                    bitacora["tipoOperacion"]="CREATE";
+                    bitacora["fechaOperacion"]= moment().format();
+                    bitacora["usuario"]=usuario;
+                    bitacora["numeroRegistros"]=arrayDocuments.length;
+                    bitacora["sistema"]="S3P";
+                    registroBitacora(bitacora);
                     let detailObject= {};
                     detailObject["numeroRegistros"]= arrayDocuments.length;
                     res.status(200).json({message : "Se realizarón las inserciones correctamente", Status : 200 , response: response, detail: detailObject});
