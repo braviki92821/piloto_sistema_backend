@@ -1305,6 +1305,8 @@ app.post('/updateS2Schema',async (req,res)=>{
             docSend["id"]= values._id;
             docSend['fechaCaptura'] = moment().format();
 
+            if(values.rfc){docSend["rfc"]= values.rfc;}
+            if(values.curp){docSend["curp"]= values.curp;}
             if(values.ejercicioFiscal){docSend["ejercicioFiscal"]= values.ejercicioFiscal;}
             if(values.ramo){
                 let ramoObj = JSON.parse(values.ramo);
@@ -1497,7 +1499,7 @@ app.post('/getCatalogs',async (req,res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
-            const result = await Catalog.find({docType: docType}).then();
+            const result = await Catalog.find({docType: docType}).sort({valor: "ascending"}).then();
             let objResponse= {};
             let strippedRows;
             if(docType === "genero" || docType === "ramo"|| docType === "tipoArea" || docType=== "nivelResponsabilidad" || docType === "tipoProcedimiento"
@@ -1545,7 +1547,7 @@ app.post('/getCatalogsMunicipiosPorEstado',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             console.log({docType: docType, cve_ent : objEstado.clave });
-            const result = await Catalog.find({docType: docType, cve_ent :  objEstado.clave }).then();
+            const result = await Catalog.find({docType: docType, cve_ent :  objEstado.clave }).sort({valor: "ascending"}).then();
             let objResponse= {};
             let strippedRows;
 
@@ -1582,7 +1584,7 @@ app.post('/getCatalogsLocalidadesPorEstado',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             console.log({docType: docType, cve_ent : objMunicipio.clave });
-            const result = await Catalog.find({docType: docType, cve_mun :  objMunicipio.clave }).then();
+            const result = await Catalog.find({docType: docType, cve_mun :  objMunicipio.clave }).sort({valor: "ascending"}).then();
             let objResponse= {};
             let strippedRows;
 
