@@ -591,6 +591,12 @@ app.post('/create/user',async (req,res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
+            try {
+                var usuarioexiste=await User.find({usuario:req.body.usuario});
+                if(usuarioexiste[0].usuario!=null){
+                    res.status(200).json({message : "El usuario ya existe.Debes ingresar otro." , Status : 500});
+                }
+            }catch (e) {
 
             try {
                 let fechaActual = moment();
@@ -666,7 +672,7 @@ app.post('/create/user',async (req,res)=>{
                 errorMessage["tipoError"] = e.type;
                 errorMessage["mensaje"] = e.message;
                 res.status(400).json(errorMessage);
-            }
+            }}
         }
     }catch (e) {
         console.log(e);
@@ -1445,7 +1451,7 @@ app.post('/getProviders',async (req,res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
-            const result = await Provider.find({fechaBaja: null, estatus:true}).then();
+            const result = await Provider.find({fechaBaja: null}).then();
             let objResponse = {};
 
             try {
@@ -1860,9 +1866,9 @@ app.post('/validationpassword',async (req,res)=>{
             const result=await User.findById(id_usuario).exec();
 
             if(result.contrasenaNueva===true){
-                res.status(200).json({message : "Necesitas cambiar tu contraseña" , Status : 500, contrasenaNueva:true, rol:result.rol, sistemas:result.sistemas, proveedor:result.proveedorDatos});
+                res.status(200).json({message : "Necesitas cambiar tu contraseña" , Status : 500, contrasenaNueva:true, rol:result.rol, sistemas:result.sistemas, proveedor:result.proveedorDatos,estatus:result.estatus});
             }else{
-                res.status(200).json({message : "Tu contraseña está al día." , Status : 200, contrasenaNueva:false, rol:result.rol, sistemas:result.sistemas, proveedor:result.proveedorDatos});
+                res.status(200).json({message : "Tu contraseña está al día." , Status : 200, contrasenaNueva:false, rol:result.rol, sistemas:result.sistemas, proveedor:result.proveedorDatos,estatus:result.estatus});
             }
 
 
