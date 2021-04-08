@@ -592,13 +592,24 @@ app.post('/create/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try {
-                var usuarioexiste=await User.find({usuario:req.body.usuario});
-                if(usuarioexiste[0].usuario!=null){
-                    res.status(200).json({message : "El usuario ya existe.Debes ingresar otro." , Status : 500});
+                var correoexiste=await User.find({correoElectronico:req.body.correoElectronico}).countDocuments();
+                if(correoexiste===undefined){
+                    correoexiste=0;
                 }
-            }catch (e) {
 
-            try {
+                if(correoexiste>0){
+                    return res.status(200).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
+                }
+
+                var usuarioexiste=await User.find({usuario:req.body.usuario}).countDocuments();
+                if(usuarioexiste===undefined){
+                    usuarioexiste=0;
+                }
+
+                if(usuarioexiste>0){
+                    return res.status(200).json({message : "El usuario ya existe.Debes ingresar otro." , Status : 500});
+                }
+
                 let fechaActual = moment();
                 let newBody = {...req.body ,fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
                 var generator = require('generate-password');
@@ -672,7 +683,7 @@ app.post('/create/user',async (req,res)=>{
                 errorMessage["tipoError"] = e.type;
                 errorMessage["mensaje"] = e.message;
                 res.status(400).json(errorMessage);
-            }}
+            }
         }
     }catch (e) {
         console.log(e);
@@ -687,6 +698,15 @@ app.put('/edit/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try{
+                var correoexiste=await User.find({ correoElectronico :{$eq:req.body.correoElectronico}, usuario:{ $ne:req.body.usuario } }).countDocuments();
+                if(correoexiste===undefined){
+                    correoexiste=0;
+                }
+
+                if(correoexiste>0){
+                    return res.status(200).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
+                }
+
                 await schemaUser.validate({ nombre : req.body.nombre,
                     apellidoUno : req.body.apellidoUno,
                     apellidoDos : req.body.apellidoDos,
@@ -1484,8 +1504,14 @@ app.post('/getUsersAll',async (req,res)=>{
 
             try {
                 var strippedRows = _.map(result, function (row) {
-                    let rowExtend = _.extend({label: (row.nombre+" "+row.apellidoUno+" "+row.apellidoDos), value: row._id}, row.toObject());
-                    return rowExtend;
+                    if(row.apellidoDos===undefined){
+                        let rowExtend = _.extend({label: (row.nombre+" "+row.apellidoUno), value: row._id}, row.toObject());
+                        return rowExtend;
+                    }else{
+                        let rowExtend = _.extend({label: (row.nombre+" "+row.apellidoUno+" "+row.apellidoDos), value: row._id}, row.toObject());
+                        return rowExtend;
+                    }
+
                 });
             } catch (e) {
                 console.log(e);
