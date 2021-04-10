@@ -24,7 +24,7 @@ var jwt = require('jsonwebtoken');
 import regeneratorRuntime from "regenerator-runtime";
 import * as Console from "console";
 import { SMTPClient } from 'emailjs';
-import {forEach} from "underscore";
+import {each, forEach} from "underscore";
 
 
 //connection mongo db
@@ -564,6 +564,30 @@ app.put('/edit/provider',async(req, res)=>{
                 let responce;
 
                 if (req.body._id ) {
+                    if(req.body.estatus==false){
+                        User.updateMany({proveedorDatos: req.body._id},{estatus:false}).exec();
+                    }
+                    var id=req.body._id.toString();
+                    var sistemasproveedor=req.body.sistemas;
+                    var usuarios=await User.find({proveedorDatos: id});
+                    var nuevoSistemas=[];
+
+                    usuarios.map( (async(row)=>{
+                        if(sistemasproveedor.length<row.sistemas.length){
+                            nuevoSistemas=[];
+                            row.sistemas.map(sistemasusuario=>{
+                                sistemasproveedor.map(sistema=>{
+                                    if(sistema==sistemasusuario){
+                                        nuevoSistemas.push(sistema);
+
+                                    }
+                                });
+
+                            });
+                            await User.updateOne({_id: row._id},{ sistemas:nuevoSistemas });
+                        }
+                    }));
+
                     responce = await Provider.findByIdAndUpdate(req.body._id, nuevoProovedor).exec();
                     res.status(200).json(responce);
                 }else {
@@ -597,84 +621,82 @@ app.post('/create/user',async (req,res)=>{
                     correoexiste=0;
                 }
 
-                if(correoexiste>0){
-                    return res.status(200).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
-                }
-
                 var usuarioexiste=await User.find({usuario:req.body.usuario}).countDocuments();
                 if(usuarioexiste===undefined){
                     usuarioexiste=0;
                 }
 
-                if(usuarioexiste>0){
-                    return res.status(200).json({message : "El usuario ya existe.Debes ingresar otro." , Status : 500});
+                if(correoexiste>0 || usuarioexiste>0){
+                    res.status(500).json({message : "El correo electrónico y/o nombre de usuario ya existe.Debes ingresar otro." , Status : 500});
+                }else{
+                    let fechaActual = moment();
+                    let newBody = {...req.body ,fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
+                    var generator = require('generate-password');
+
+                    var password = generator.generate({
+                        length: 8,
+                        numbers: true,
+                        symbols:true,
+                        lowercase:true,
+                        uppercase:true,
+                        strict:true
+                    });
+
+                    await schemaUserCreate.concat(schemaUser).validate({ nombre : newBody.nombre,
+                        apellidoUno : newBody.apellidoUno,
+                        apellidoDos : newBody.apellidoDos,
+                        cargo : newBody.cargo,
+                        correoElectronico : newBody.correoElectronico,
+                        telefono : newBody.telefono,
+                        extension : newBody.extension,
+                        usuario : newBody.usuario,
+                        constrasena : password,
+                        sistemas : newBody.sistemas,
+                        proveedorDatos : newBody.proveedorDatos,
+                        estatus : true,
+                        fechaAlta:newBody.fechaAlta,
+                        vigenciaContrasena: newBody.vigenciaContrasena,
+                        rol: "2"
+                    });
+                    if(newBody.passwordConfirmation){
+                        delete newBody.passwordConfirmation;
+                    }
+
+                    delete newBody.constrasena;
+                    newBody["constrasena"]=password;
+                    newBody["contrasenaNueva"]=true;
+                    newBody["rol"]=2;
+
+                    const client = new SMTPClient({
+                        user: 'soporteportalpdn@gmail.com',
+                        password: 'pdndigital-2021',
+                        host: 'smtp.gmail.com',
+                        ssl: true,
+                    });
+
+                    const message = {
+                        text: 'Enviamos tu nueva contraseña del portal PDN',
+                        from: 'soporteportalpdn@gmail.com',
+                        to: newBody.correoElectronico,
+                        subject: 'Enviamos tu nueva contraseña del portal PDN',
+                        attachment: [
+                            { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+password+'</h3></b></i></html>', alternative: true }
+                        ],
+                    };
+
+                    client.send(message, function (err, message) {
+                        if(err!=null){
+                            res.status(200).json({message : "Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador." , Status : 500});
+                        }
+                    });
+
+                    const nuevoUsuario = new User(newBody);
+                    let response;
+                    response = await nuevoUsuario.save();
+                    res.status(200).json(response);
                 }
 
-                let fechaActual = moment();
-                let newBody = {...req.body ,fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
-                var generator = require('generate-password');
 
-                var password = generator.generate({
-                    length: 8,
-                    numbers: true,
-                    symbols:true,
-                    lowercase:true,
-                    uppercase:true,
-                    strict:true
-                });
-
-              await schemaUserCreate.concat(schemaUser).validate({ nombre : newBody.nombre,
-                    apellidoUno : newBody.apellidoUno,
-                    apellidoDos : newBody.apellidoDos,
-                    cargo : newBody.cargo,
-                  correoElectronico : newBody.correoElectronico,
-                  telefono : newBody.telefono,
-                  extension : newBody.extension,
-                  usuario : newBody.usuario,
-                  constrasena : password,
-                  sistemas : newBody.sistemas,
-                  proveedorDatos : newBody.proveedorDatos,
-                  estatus : true,
-                  fechaAlta:newBody.fechaAlta,
-                  vigenciaContrasena: newBody.vigenciaContrasena,
-                  rol: "2"
-              });
-                 if(newBody.passwordConfirmation){
-                     delete newBody.passwordConfirmation;
-                 }
-
-                 delete newBody.constrasena;
-                 newBody["constrasena"]=password;
-                 newBody["contrasenaNueva"]=true;
-                 newBody["rol"]=2;
-
-                const client = new SMTPClient({
-                    user: 'soporteportalpdn@gmail.com',
-                    password: 'pdndigital-2021',
-                    host: 'smtp.gmail.com',
-                    ssl: true,
-                });
-
-                const message = {
-                    text: 'Enviamos tu nueva contraseña del portal PDN',
-                    from: 'soporteportalpdn@gmail.com',
-                    to: newBody.correoElectronico,
-                    subject: 'Enviamos tu nueva contraseña del portal PDN',
-                    attachment: [
-                        { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+password+'</h3></b></i></html>', alternative: true }
-                    ],
-                };
-
-                client.send(message, function (err, message) {
-                    if(err!=null){
-                        res.status(200).json({message : "Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador." , Status : 500});
-                    }
-                });
-
-                  const nuevoUsuario = new User(newBody);
-                  let response;
-                  response = await nuevoUsuario.save();
-                  res.status(200).json(response);
 
             }catch (e) {
                 let errorMessage = {};
@@ -703,31 +725,38 @@ app.put('/edit/user',async (req,res)=>{
                     correoexiste=0;
                 }
 
+                var proveedorvigente=await Provider.findById(req.body.proveedorDatos);
+
                 if(correoexiste>0){
-                    return res.status(200).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
+                    res.status(500).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
+                }else if(proveedorvigente.estatus==false){
+                    res.status(500).json({message : "El estatus del proveedor es no vigente.El usuario no puede ser vigente" , Status : 500});
+                }
+                else{
+                    await schemaUser.validate({ nombre : req.body.nombre,
+                        apellidoUno : req.body.apellidoUno,
+                        apellidoDos : req.body.apellidoDos,
+                        cargo : req.body.cargo,
+                        correoElectronico : req.body.correoElectronico,
+                        telefono : req.body.telefono,
+                        extension : req.body.extension,
+                        usuario : req.body.usuario,
+                        constrasena : req.body.constrasena,
+                        sistemas : req.body.sistemas,
+                        proveedorDatos : req.body.proveedorDatos,
+                        estatus : req.body.estatus });
+
+                    const nuevoUsuario = new User(req.body);
+                    let response;
+                    if(req.body._id ){
+                        response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
+                        res.status(200).json(response);
+                    }else{
+                        res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+                    }
                 }
 
-                await schemaUser.validate({ nombre : req.body.nombre,
-                    apellidoUno : req.body.apellidoUno,
-                    apellidoDos : req.body.apellidoDos,
-                    cargo : req.body.cargo,
-                    correoElectronico : req.body.correoElectronico,
-                    telefono : req.body.telefono,
-                    extension : req.body.extension,
-                    usuario : req.body.usuario,
-                    constrasena : req.body.constrasena,
-                    sistemas : req.body.sistemas,
-                    proveedorDatos : req.body.proveedorDatos,
-                    estatus : req.body.estatus });
 
-                const nuevoUsuario = new User(req.body);
-                let response;
-                if(req.body._id ){
-                    response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
-                    res.status(200).json(response);
-                }else{
-                    res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
-                }
             }catch (e) {
                 let errorMessage = {};
                 errorMessage["errores"] = e.errors;
