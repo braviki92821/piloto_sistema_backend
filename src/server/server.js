@@ -252,6 +252,10 @@ app.post('/validateSchemaS2',async (req,res)=>{
             if(Array.isArray(newdocument)){
                 for (let doc of newdocument){
                     doc["id"]= c1.toString();
+                    doc["fechaCaptura"]= moment().format();
+                    if(doc["tipoProcedimiento"].length === 0 ){
+                        delete doc["tipoProcedimiento"];
+                    }
                     c1++;
                     respuesta.push(await validateSchema([doc],schemaS2,validacion));
                     ids.push(doc.id);
@@ -259,6 +263,10 @@ app.post('/validateSchemaS2',async (req,res)=>{
                 }
             }else{
                 newdocument["id"]= c1.toString();
+                newdocument["fechaCaptura"]= moment().format();
+                if(newdocument["tipoProcedimiento"].length === 0 ){
+                    delete newdocument["tipoProcedimiento"];
+                }
                 c1++;
                 respuesta.push(await validateSchema([newdocument],schemaS2,validacion));
                 arrayDocuments.push(newdocument);
@@ -331,6 +339,9 @@ app.post('/validateSchemaS3S',async (req,res)=>{
             if(Array.isArray(newdocument)){
                 for (let doc of newdocument){
                     doc["id"]= c1.toString();
+                    if(doc["tipoSancion"].length === 0 ){
+                        delete doc["tipoSancion"];
+                    }
                     c1++;
                     respuesta.push(await validateSchema([doc],schemaS3S,validacion));
                     ids.push(doc.id);
@@ -338,6 +349,9 @@ app.post('/validateSchemaS3S',async (req,res)=>{
                 }
             }else{
                 newdocument["id"]= c1.toString();
+                if(newdocument["tipoSancion"].length === 0 ){
+                    delete newdocument["tipoSancion"];
+                }
                 c1++;
                 respuesta.push(await validateSchema([newdocument],schemaS3S,validacion));
                 arrayDocuments.push(newdocument);
@@ -409,6 +423,10 @@ app.post('/validateSchemaS3P',async (req,res)=>{
                 for (let doc of newdocument){
                     doc["id"]= c1.toString();
                     doc["fechaCaptura"]= moment().format();
+                    if(doc["tipoSancion"].length === 0 ){
+                        console.log("no tiene datos");
+                        delete doc["tipoSancion"];
+                    }
                     c1++;
                     respuesta.push(await validateSchema([doc],schemaS3P,validacion));
                     ids.push(doc.id);
@@ -416,6 +434,10 @@ app.post('/validateSchemaS3P',async (req,res)=>{
                 }
             }else{
                 newdocument["id"]= c1.toString();
+                if(newdocument["tipoSancion"].length === 0 ){
+                    console.log("no tiene datos");
+                    delete newdocument["tipoSancion"];
+                }
                 newdocument["fechaCaptura"]= moment().format();
                 c1++;
                 respuesta.push(await validateSchema([newdocument],schemaS3P,validacion));
@@ -1350,6 +1372,12 @@ app.post('/updateS2Schema',async (req,res)=>{
             }
 
             let objSuperiorInmediato = {};
+            if(values.siRfc){
+                objSuperiorInmediato = {...objSuperiorInmediato, rfc: values.siRfc}
+            }
+            if(values.siCurp){
+                objSuperiorInmediato = {...objSuperiorInmediato, curp: values.siCurp}
+            }
             if(values.sinombres){
                 objSuperiorInmediato = {...objSuperiorInmediato, nombres: values.sinombres}
             }
@@ -1580,17 +1608,20 @@ app.post('/getCatalogsLocalidadesPorEstado',async (req,res)=>{
         var code = validateToken(req);
         let docType= "localidad";
         let idMunicipio= req.body.idMunicipio;
+        let idEntidad= req.body.idEntidad;
         let objMunicipio;
+        let objEntidad;
         try {
             objMunicipio= JSON.parse(idMunicipio);
+            objEntidad=  JSON.parse(idEntidad);
         }catch (e) {
             console.log(e);
         }
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
-            console.log({docType: docType, cve_ent : objMunicipio.clave });
-            const result = await Catalog.find({docType: docType, cve_mun :  objMunicipio.clave }).sort({valor: "ascending"}).then();
+            console.log({docType: docType, cve_mun : objMunicipio.clave ,  cve_ent : objEntidad.clave});
+            const result = await Catalog.find({docType: docType, cve_mun :  objMunicipio.clave , cve_ent : objEntidad.clave}).sort({valor: "ascending"}).then();
             let objResponse= {};
             let strippedRows;
 
