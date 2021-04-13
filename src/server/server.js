@@ -188,9 +188,9 @@ const schemaUser = Yup.object().shape({
 
 
 const schemaProvider = Yup.object().shape({
-    dependencia:  Yup.string().required().matches(new RegExp('^[ñáéíóúáéíóúÁÉÍÓÚa-zA-Z ]*$'), 'Inserta solamente caracteres'),
-    sistemas: Yup.array().min(1).required(),
-    estatus: Yup.boolean().required(),
+    dependencia:  Yup.string().required("El nombre de la dependencia es requerido").matches(new RegExp('^[ñáéíóúáéíóúÁÉÍÓÚa-zA-Z ]*$'), 'Inserta solamente caracteres'),
+    sistemas: Yup.array().min(1).required("El campo sistemas es requerido"),
+    estatus: Yup.boolean().required("El campo estatus es requerido"),
     fechaAlta: Yup.string(),
 });
 
@@ -461,6 +461,7 @@ app.post('/validateSchemaS3P',async (req,res)=>{
                     let psancionados = S3P.model('Psancionados', psancionadosSchema, 'psancionados');
                     let response;
                     response = await psancionados.insertMany(arrayDocuments);
+
                     var datausuario=await User.findById(usuario);
                     response.map(async(row)=>{
                         const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:row._id, sistema:"S3P"});
@@ -578,7 +579,6 @@ app.put('/edit/provider',async(req, res)=>{
                     dependencia: req.body.dependencia,
                     sistemas: req.body.sistemas,
                     estatus: req.body.estatus,
-                    fechaAlta: req.body.fechaAlta,
                     fechaActualizacion: moment().format(),
                 });
 
@@ -638,12 +638,12 @@ app.post('/create/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try {
-                var correoexiste=await User.find({correoElectronico:req.body.correoElectronico}).countDocuments();
+                var correoexiste=await User.find({correoElectronico:req.body.correoElectronico}, {fechaBaja: {$eq:null }}).countDocuments();
                 if(correoexiste===undefined){
                     correoexiste=0;
                 }
 
-                var usuarioexiste=await User.find({usuario:req.body.usuario}).countDocuments();
+                var usuarioexiste=await User.find({usuario:req.body.usuario}, {fechaBaja: {$eq:null }}).countDocuments();
                 if(usuarioexiste===undefined){
                     usuarioexiste=0;
                 }
@@ -651,10 +651,7 @@ app.post('/create/user',async (req,res)=>{
                 if(correoexiste>0 || usuarioexiste>0){
                     res.status(500).json({message : "El correo electrónico y/o nombre de usuario ya existe.Debes ingresar otro." , Status : 500});
                 }else{
-                    let fechaActual = moment();
-                    let newBody = {...req.body ,fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
                     var generator = require('generate-password');
-
                     var password = generator.generate({
                         length: 8,
                         numbers: true,
@@ -663,6 +660,9 @@ app.post('/create/user',async (req,res)=>{
                         uppercase:true,
                         strict:true
                     });
+
+                    let fechaActual = moment();
+                    let newBody = {...req.body ,contrasena:password, fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
 
                     await schemaUserCreate.concat(schemaUser).validate({ nombre : newBody.nombre,
                         apellidoUno : newBody.apellidoUno,
@@ -688,6 +688,9 @@ app.post('/create/user',async (req,res)=>{
                     newBody["constrasena"]=password;
                     newBody["contrasenaNueva"]=true;
                     newBody["rol"]=2;
+                    if(req.body.apellidoDos=="" || req.body.apellidoDos===undefined){
+                        newBody["apellidoDos"]="";
+                    }
 
                     const client = new SMTPClient({
                         user: 'soporteportalpdn@gmail.com',
@@ -742,7 +745,7 @@ app.put('/edit/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try{
-                var correoexiste=await User.find({ correoElectronico :{$eq:req.body.correoElectronico}, usuario:{ $ne:req.body.usuario } }).countDocuments();
+                var correoexiste=await User.find({ correoElectronico :{$eq:req.body.correoElectronico}, usuario:{ $ne:req.body.usuario }, fechaBaja: {$eq:null } }).countDocuments();
                 if(correoexiste===undefined){
                     correoexiste=0;
                 }
@@ -755,20 +758,25 @@ app.put('/edit/user',async (req,res)=>{
                     res.status(500).json({message : "El estatus del proveedor es no vigente.El usuario no puede ser vigente" , Status : 500});
                 }
                 else{
-                    await schemaUser.validate({ nombre : req.body.nombre,
-                        apellidoUno : req.body.apellidoUno,
-                        apellidoDos : req.body.apellidoDos,
-                        cargo : req.body.cargo,
-                        correoElectronico : req.body.correoElectronico,
-                        telefono : req.body.telefono,
-                        extension : req.body.extension,
-                        usuario : req.body.usuario,
-                        constrasena : req.body.constrasena,
-                        sistemas : req.body.sistemas,
-                        proveedorDatos : req.body.proveedorDatos,
-                        estatus : req.body.estatus });
+                    let newBody = {...req.body };
 
-                    const nuevoUsuario = new User(req.body);
+                    await schemaUser.validate({ nombre : newBody.nombre,
+                        apellidoUno : newBody.apellidoUno,
+                        apellidoDos : newBody.apellidoDos,
+                        cargo : newBody.cargo,
+                        correoElectronico : newBody.correoElectronico,
+                        telefono : newBody.telefono,
+                        extension : newBody.extension,
+                        usuario : newBody.usuario,
+                        constrasena : newBody.constrasena,
+                        sistemas : newBody.sistemas,
+                        proveedorDatos : newBody.proveedorDatos,
+                        estatus : newBody.estatus });
+                    if(req.body.apellidoDos=="" || req.body.apellidoDos===undefined){
+                        newBody["apellidoDos"]="";
+                    }
+
+                    const nuevoUsuario = new User(newBody);
                     let response;
                     if(req.body._id ){
                         response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
