@@ -1026,7 +1026,12 @@ app.post('/listSchemaS3S',async (req,res)=> {
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
-        }else if (code.code == 200 ){
+        }else if (code.code == 200 ){/*
+            var usuario=await User.findById(req.body.idUser);
+            var proveedorDatos=usuario.proveedorDatos;
+            var sistema="S3S";
+            const result = await proveedorRegistros.find({sistema: sistema, proveedorId:proveedorDatos}).then();
+            */
             let sancionados =  S3S.model('Ssancionados', ssancionadosSchema, 'ssancionados');
             let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
@@ -1056,11 +1061,22 @@ app.post('/listSchemaS2',async (req,res)=> {
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
+            var usuario=await User.findById(req.body.idUser);
+            var proveedorDatos=usuario.proveedorDatos;
+            var sistema="S2";
+            const result = await proveedorRegistros.find({sistema: sistema, proveedorId:proveedorDatos}).then();
+            var arrs2=[];
+            _.map((result),(row)=>{
+                arrs2.push(row.registroSistemaId);
+            });
+            var strquery="";
+            strquery=req.body.query;
+
             let Spic = S2.model('Spic',spicSchema, 'spic');
             let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
-            let query = req.body.query === undefined ? {} : req.body.query;
+            let query = req.body.query === undefined ? {"_id":{ $in:arrs2 }} : {"_id":{ $in:arrs2 },strquery};
 
             const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
@@ -1073,7 +1089,7 @@ app.post('/listSchemaS2',async (req,res)=> {
             res.status(200).json(objResponse);
         }
     }catch (e) {
-
+        console.log(e);
     }
 });
 
