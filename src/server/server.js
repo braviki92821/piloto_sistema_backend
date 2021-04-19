@@ -84,11 +84,10 @@ var validateToken = function(req){
         }else if(err.message === "invalid signature" || err.message.includes("Unexpected token")){
             error = "Error token inválido, el token probablemente ha sido modificado favor de verificar"
         }else if (err.message ==="jwt expired"){
-            error = "Error el token de autenticación (JWT) ha expirado, favor de enviar uno válido "
+            error = "Sesión expirada"
         }else {
             error = err.message;
         }
-
         let obj = {code: 401, message: error};
         return obj;
     }
