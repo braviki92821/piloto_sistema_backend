@@ -187,9 +187,9 @@ const schemaUser = Yup.object().shape({
 
 
 const schemaProvider = Yup.object().shape({
-    dependencia:  Yup.string().required().matches(new RegExp('^[ñáéíóúáéíóúÁÉÍÓÚa-zA-Z ]*$'), 'Inserta solamente caracteres'),
-    sistemas: Yup.array().min(1).required(),
-    estatus: Yup.boolean().required(),
+    dependencia:  Yup.string().required("El nombre de la dependencia es requerido").matches(new RegExp('^[ñáéíóúáéíóúÁÉÍÓÚa-zA-Z ]*$'), 'Inserta solamente caracteres'),
+    sistemas: Yup.array().min(1).required("El campo sistemas es requerido"),
+    estatus: Yup.boolean().required("El campo estatus es requerido"),
     fechaAlta: Yup.string(),
 });
 
@@ -460,6 +460,7 @@ app.post('/validateSchemaS3P',async (req,res)=>{
                     let psancionados = S3P.model('Psancionados', psancionadosSchema, 'psancionados');
                     let response;
                     response = await psancionados.insertMany(arrayDocuments);
+
                     var datausuario=await User.findById(usuario);
                     response.map(async(row)=>{
                         const proveedorRegistros1= new proveedorRegistros({proveedorId:datausuario.proveedorDatos,registroSistemaId:row._id, sistema:"S3P"});
@@ -577,7 +578,6 @@ app.put('/edit/provider',async(req, res)=>{
                     dependencia: req.body.dependencia,
                     sistemas: req.body.sistemas,
                     estatus: req.body.estatus,
-                    fechaAlta: req.body.fechaAlta,
                     fechaActualizacion: moment().format(),
                 });
 
@@ -637,12 +637,12 @@ app.post('/create/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try {
-                var correoexiste=await User.find({correoElectronico:req.body.correoElectronico}).countDocuments();
+                var correoexiste=await User.find({correoElectronico:req.body.correoElectronico}, {fechaBaja: {$eq:null }}).countDocuments();
                 if(correoexiste===undefined){
                     correoexiste=0;
                 }
 
-                var usuarioexiste=await User.find({usuario:req.body.usuario}).countDocuments();
+                var usuarioexiste=await User.find({usuario:req.body.usuario}, {fechaBaja: {$eq:null }}).countDocuments();
                 if(usuarioexiste===undefined){
                     usuarioexiste=0;
                 }
@@ -650,10 +650,7 @@ app.post('/create/user',async (req,res)=>{
                 if(correoexiste>0 || usuarioexiste>0){
                     res.status(500).json({message : "El correo electrónico y/o nombre de usuario ya existe.Debes ingresar otro." , Status : 500});
                 }else{
-                    let fechaActual = moment();
-                    let newBody = {...req.body ,fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
                     var generator = require('generate-password');
-
                     var password = generator.generate({
                         length: 8,
                         numbers: true,
@@ -662,6 +659,9 @@ app.post('/create/user',async (req,res)=>{
                         uppercase:true,
                         strict:true
                     });
+
+                    let fechaActual = moment();
+                    let newBody = {...req.body ,contrasena:password, fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
 
                     await schemaUserCreate.concat(schemaUser).validate({ nombre : newBody.nombre,
                         apellidoUno : newBody.apellidoUno,
@@ -687,6 +687,9 @@ app.post('/create/user',async (req,res)=>{
                     newBody["constrasena"]=password;
                     newBody["contrasenaNueva"]=true;
                     newBody["rol"]=2;
+                    if(req.body.apellidoDos=="" || req.body.apellidoDos===undefined){
+                        newBody["apellidoDos"]="";
+                    }
 
                     const client = new SMTPClient({
                         user: 'soporteportalpdn@gmail.com',
@@ -741,7 +744,7 @@ app.put('/edit/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try{
-                var correoexiste=await User.find({ correoElectronico :{$eq:req.body.correoElectronico}, usuario:{ $ne:req.body.usuario } }).countDocuments();
+                var correoexiste=await User.find({ correoElectronico :{$eq:req.body.correoElectronico}, usuario:{ $ne:req.body.usuario }, fechaBaja: {$eq:null } }).countDocuments();
                 if(correoexiste===undefined){
                     correoexiste=0;
                 }
@@ -750,24 +753,29 @@ app.put('/edit/user',async (req,res)=>{
 
                 if(correoexiste>0){
                     res.status(500).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
-                }else if(proveedorvigente.estatus==false){
+                }else if(proveedorvigente.estatus==false  && req.body.estatus==true){
                     res.status(500).json({message : "El estatus del proveedor es no vigente.El usuario no puede ser vigente" , Status : 500});
                 }
                 else{
-                    await schemaUser.validate({ nombre : req.body.nombre,
-                        apellidoUno : req.body.apellidoUno,
-                        apellidoDos : req.body.apellidoDos,
-                        cargo : req.body.cargo,
-                        correoElectronico : req.body.correoElectronico,
-                        telefono : req.body.telefono,
-                        extension : req.body.extension,
-                        usuario : req.body.usuario,
-                        constrasena : req.body.constrasena,
-                        sistemas : req.body.sistemas,
-                        proveedorDatos : req.body.proveedorDatos,
-                        estatus : req.body.estatus });
+                    let newBody = {...req.body };
 
-                    const nuevoUsuario = new User(req.body);
+                    await schemaUser.validate({ nombre : newBody.nombre,
+                        apellidoUno : newBody.apellidoUno,
+                        apellidoDos : newBody.apellidoDos,
+                        cargo : newBody.cargo,
+                        correoElectronico : newBody.correoElectronico,
+                        telefono : newBody.telefono,
+                        extension : newBody.extension,
+                        usuario : newBody.usuario,
+                        constrasena : newBody.constrasena,
+                        sistemas : newBody.sistemas,
+                        proveedorDatos : newBody.proveedorDatos,
+                        estatus : newBody.estatus });
+                    if(req.body.apellidoDos=="" || req.body.apellidoDos===undefined){
+                        newBody["apellidoDos"]="";
+                    }
+
+                    const nuevoUsuario = new User(newBody);
                     let response;
                     if(req.body._id ){
                         response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
@@ -1017,7 +1025,12 @@ app.post('/listSchemaS3S',async (req,res)=> {
         var code = validateToken(req);
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
-        }else if (code.code == 200 ){
+        }else if (code.code == 200 ){/*
+            var usuario=await User.findById(req.body.idUser);
+            var proveedorDatos=usuario.proveedorDatos;
+            var sistema="S3S";
+            const result = await proveedorRegistros.find({sistema: sistema, proveedorId:proveedorDatos}).then();
+            */
             let sancionados =  S3S.model('Ssancionados', ssancionadosSchema, 'ssancionados');
             let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
@@ -1047,11 +1060,22 @@ app.post('/listSchemaS2',async (req,res)=> {
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
+            var usuario=await User.findById(req.body.idUser);
+            var proveedorDatos=usuario.proveedorDatos;
+            var sistema="S2";
+            const result = await proveedorRegistros.find({sistema: sistema, proveedorId:proveedorDatos}).then();
+            var arrs2=[];
+            _.map((result),(row)=>{
+                arrs2.push(row.registroSistemaId);
+            });
+            var strquery="";
+            strquery=req.body.query;
+
             let Spic = S2.model('Spic',spicSchema, 'spic');
             let sortObj = req.body.sort  === undefined ? {} : req.body.sort;
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
-            let query = req.body.query === undefined ? {} : req.body.query;
+            let query = req.body.query === undefined ? {"_id":{ $in:arrs2 }} : {"_id":{ $in:arrs2 },strquery};
 
             const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
@@ -1064,7 +1088,7 @@ app.post('/listSchemaS2',async (req,res)=> {
             res.status(200).json(objResponse);
         }
     }catch (e) {
-
+        console.log(e);
     }
 });
 
@@ -1928,7 +1952,7 @@ app.post('/changepassword',async (req,res)=>{
 
 
         const result = await User.update({_id:id},{constrasena: constrasena,contrasenaNueva:false,  vigenciaContrasena : fechaActual.add(3 , 'months').format().toString()}).then();
-        res.status(200).json({message : "¡Se ha actualizado tu contraseña!.Favor de cerrar la sesión e iniciar nuevamente." , Status : 200});
+        res.status(200).json({message : "¡Se ha actualizado tu contraseña!." , Status : 200});
 
     }catch (e) {
         console.log(e);
