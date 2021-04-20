@@ -178,7 +178,7 @@ const schemaUser = Yup.object().shape({
     telefono:  Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required("El campo Número de teléfono es requerido").trim(),
     extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').trim(),
     usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'),'Inserta al menos 8 caracteres, no se permiten caracteres especiales' ).required("El campo Nombre de usuario es requerido").trim(),
-    constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@><?¿¡´{}|#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required("El campo Contraseña es requerido").trim(),
+    constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':{}¿?!¡@#$%^&*/)(+,.°|:;"=<>_-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required("El campo Contraseña es requerido").trim(),
     sistemas: Yup.array().min(1).required("El campo Sistemas aplicables es requerido"),
     proveedorDatos: Yup.string().required("El campo Proveedor de datos es requerido"),
     estatus: Yup.boolean().required("El campo Estatus es requerido")
@@ -664,7 +664,7 @@ app.post('/create/user',async (req,res)=>{
                             lowercase:true,
                             uppercase:true,
                             strict:true,
-                            exclude:('[]<>~´¬@^⌐«»°√α±÷©§')
+                            exclude:('_[]<>~´¬@^⌐«»°√α±÷©§')
                         });
 
                     }
@@ -732,10 +732,10 @@ app.post('/create/user',async (req,res)=>{
                     });
 
                     const message = {
-                        text: 'Enviamos tu nueva contraseña del portal PDN',
+                        text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
                         from: 'soporteportalpdn@gmail.com',
                         to: newBody.correoElectronico,
-                        subject: 'Enviamos tu nueva contraseña del portal PDN',
+                        subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
                         attachment: [
                             { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+pass+'</h3></b></i></html>', alternative: true }
                         ],
@@ -1956,7 +1956,8 @@ app.post('/resetpassword',async (req,res)=>{
             symbols:true,
             lowercase:true,
             uppercase:true,
-            strict:true
+            strict:true,
+            exclude:('_[]<>~´¬@^⌐«»°√α±÷©§')
         });
 
         const client = new SMTPClient({
@@ -1972,7 +1973,7 @@ app.post('/resetpassword',async (req,res)=>{
             to: correo,
             subject: ' Bienvenido al Sistema de Carga de datos S2 y S3',
             attachment: [
-                { data: '<html>Te enviamos tu contraseña para que puedas acceder al sistema, recuerda que debes cambiarla inmediatemente. <br><i><b><h3>Contraseña:'+password+'</h3></b></i></html>', alternative: true }
+                { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+password+'</h3></b></i></html>', alternative: true }
             ],
         };
 
