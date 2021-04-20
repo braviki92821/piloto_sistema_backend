@@ -252,8 +252,10 @@ app.post('/validateSchemaS2',async (req,res)=>{
                 for (let doc of newdocument){
                     doc["id"]= c1.toString();
                     doc["fechaCaptura"]= moment().format();
-                    if(doc["tipoProcedimiento"].length === 0 ){
-                        delete doc["tipoProcedimiento"];
+                    if(doc["tipoProcedimiento"]){
+                        if(doc["tipoProcedimiento"].length === 0 ){
+                            delete doc["tipoProcedimiento"];
+                        }
                     }
                     c1++;
                     respuesta.push(await validateSchema([doc],schemaS2,validacion));
@@ -263,8 +265,10 @@ app.post('/validateSchemaS2',async (req,res)=>{
             }else{
                 newdocument["id"]= c1.toString();
                 newdocument["fechaCaptura"]= moment().format();
-                if(newdocument["tipoProcedimiento"].length === 0 ){
-                    delete newdocument["tipoProcedimiento"];
+                if(newdocument["tipoProcedimiento"]){
+                    if(newdocument["tipoProcedimiento"].length === 0 ){
+                        delete newdocument["tipoProcedimiento"];
+                    }
                 }
                 c1++;
                 respuesta.push(await validateSchema([newdocument],schemaS2,validacion));
@@ -280,7 +284,7 @@ app.post('/validateSchemaS2',async (req,res)=>{
             }
 
             if(wasInvalid){
-                res.status(200).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
+                res.status(500).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
             }else{
                 //se insertan
                 try {
@@ -365,7 +369,7 @@ app.post('/validateSchemaS3S',async (req,res)=>{
             }
 
             if(wasInvalid){
-                res.status(200).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
+                res.status(500).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
             }else{
                 //se insertan
                 try {
@@ -452,7 +456,7 @@ app.post('/validateSchemaS3P',async (req,res)=>{
             }
 
             if(wasInvalid){
-                res.status(200).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
+                res.status(500).json({message : "Error : La validación no fue exitosa" , Status : 500, response : respuesta});
             }else{
                 //se insertan
                 console.log("paso la validacion");
