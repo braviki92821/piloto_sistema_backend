@@ -17,6 +17,7 @@
     "moment": "^2.29.1",
     "mongoose": "^5.9.26",
     "mongoose-paginate-v2": "^1.3.9",
+    "password-validator": "^5.1.1",
     "regenerator-runtime": "^0.13.7",
     "swagger-client": "^3.12.0",
     "swagger-model-validator": "^3.0.19",

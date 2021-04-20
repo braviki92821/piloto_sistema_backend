@@ -178,7 +178,7 @@ const schemaUser = Yup.object().shape({
     telefono:  Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required("El campo Número de teléfono es requerido").trim(),
     extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').trim(),
     usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'),'Inserta al menos 8 caracteres, no se permiten caracteres especiales' ).required("El campo Nombre de usuario es requerido").trim(),
-    constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required("El campo Contraseña es requerido").trim(),
+    constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@><?¿¡´{}|#$%^&*()_+,.\\\\\\/;\':"-]).{8,}$'),'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ' ).required("El campo Contraseña es requerido").trim(),
     sistemas: Yup.array().min(1).required("El campo Sistemas aplicables es requerido"),
     proveedorDatos: Yup.string().required("El campo Proveedor de datos es requerido"),
     estatus: Yup.boolean().required("El campo Estatus es requerido")
@@ -651,17 +651,46 @@ app.post('/create/user',async (req,res)=>{
                     res.status(500).json({message : "El correo electrónico y/o nombre de usuario ya existe.Debes ingresar otro." , Status : 500});
                 }else{
                     var generator = require('generate-password');
-                    var password = generator.generate({
-                        length: 8,
-                        numbers: true,
-                        symbols:true,
-                        lowercase:true,
-                        uppercase:true,
-                        strict:true
-                    });
+                    var pass="";
+                    function generatepassword(){
+                        pass = generator.generate({
+                            length: 8,
+                            numbers: true,
+                            symbols:true,
+                            lowercase:true,
+                            uppercase:true,
+                            strict:true,
+                            exclude:('[]<>~´¬@^⌐«»°√α±÷©§')
+                        });
+
+                    }
+
+                    generatepassword();
+                    var passwordValidator = require('password-validator');
+                    var schema = new passwordValidator();
+
+                    schema
+                        .is().min(8)                                    // Minimum length 8
+                        .is().max(100)                                  // Maximum length 100
+                        .has().uppercase()                              // Must have uppercase letters
+                        .has().lowercase()                              // Must have lowercase letters
+                        .has().digits(1)                                // Must have at least 2 digits
+                        .has().symbols(1)
+                        .has().not().spaces()                           // Should not have spaces
+                        .is().not().oneOf(['Passw0rd', 'Password123']); // Blacklist these values
+
+                    while(schema.validate(pass)==false){
+                        generatepassword();
+                    }
+
+                    if(schema.validate(pass)==false){
+                        while(schema.validate(password)==false){
+                            generatepassword();
+                        }
+                    }
 
                     let fechaActual = moment();
-                    let newBody = {...req.body ,contrasena:password, fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
+                    let newBody = {...req.body ,contrasena:pass, fechaAlta:  fechaActual.format(), vigenciaContrasena : fechaActual.add(3 , 'months').format().toString(), estatus :true };
 
                     await schemaUserCreate.concat(schemaUser).validate({ nombre : newBody.nombre,
                         apellidoUno : newBody.apellidoUno,
@@ -671,7 +700,7 @@ app.post('/create/user',async (req,res)=>{
                         telefono : newBody.telefono,
                         extension : newBody.extension,
                         usuario : newBody.usuario,
-                        constrasena : password,
+                        constrasena : pass,
                         sistemas : newBody.sistemas,
                         proveedorDatos : newBody.proveedorDatos,
                         estatus : true,
@@ -684,7 +713,7 @@ app.post('/create/user',async (req,res)=>{
                     }
 
                     delete newBody.constrasena;
-                    newBody["constrasena"]=password;
+                    newBody["constrasena"]=pass;
                     newBody["contrasenaNueva"]=true;
                     newBody["rol"]=2;
                     if(req.body.apellidoDos=="" || req.body.apellidoDos===undefined){
@@ -704,7 +733,7 @@ app.post('/create/user',async (req,res)=>{
                         to: newBody.correoElectronico,
                         subject: 'Enviamos tu nueva contraseña del portal PDN',
                         attachment: [
-                            { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+password+'</h3></b></i></html>', alternative: true }
+                            { data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>'+pass+'</h3></b></i></html>', alternative: true }
                         ],
                     };
 
@@ -2010,19 +2039,3 @@ app.post('/validationpassword',async (req,res)=>{
 
 });
 
-app.post('/getrecordsbysystem',async (req,res)=>{
-    try {
-        var code = validateToken(req);
-        if(code.code == 401){
-            res.status(401).json({code: '401', message: code.message});
-        }else if (code.code == 200 ){
-            var sistema=req.body.sistema;
-            const result = await proveedorRegistros.find({sistema: sistema}).then();
-            let objResponse= {};
-            objResponse["results"]= result;
-            res.status(200).json(objResponse);
-        }
-    }catch (e) {
-        console.log(e);
-    }
-});
