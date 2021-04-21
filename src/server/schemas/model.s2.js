@@ -1,6 +1,5 @@
 const { Schema } = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate-v2');
-
 const spicSchema = new Schema({
     fechaCaptura: String,
     ejercicioFiscal: String,
