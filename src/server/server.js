@@ -783,6 +783,14 @@ app.put('/edit/user',async (req,res)=>{
                 }
 
                 var proveedorvigente=await Provider.findById(req.body.proveedorDatos);
+                    let arrsistemas =[];
+                    for(let sistemaproveedor of proveedorvigente.sistemas){
+                        for(let sistemauser of req.body.sistemas){
+                            if(sistemaproveedor==sistemauser){
+                                arrsistemas.push(sistemaproveedor);
+                            }
+                        }
+                    }
 
                 if(correoexiste>0){
                     res.status(500).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
@@ -791,7 +799,7 @@ app.put('/edit/user',async (req,res)=>{
                 }
                 else{
                     let newBody = {...req.body };
-
+                    newBody["sistemas"]=arrsistemas;
                     await schemaUser.validate({ nombre : newBody.nombre,
                         apellidoUno : newBody.apellidoUno,
                         apellidoDos : newBody.apellidoDos,
