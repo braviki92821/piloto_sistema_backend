@@ -1076,8 +1076,10 @@ app.post('/listSchemaS3S',async (req,res)=> {
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
 
-            if(arrs3s.length > 0 ){
-                query = {...query, "_id":{ $in:arrs3s }}
+            if(!query._id){
+                if(arrs3s.length > 0 ){
+                    query = {...query, "_id":{ $in:arrs3s }}
+                }
             }
 
             const paginationResult = await sancionados.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
@@ -1095,7 +1097,6 @@ app.post('/listSchemaS3S',async (req,res)=> {
     }
 });
 
-
 app.post('/listSchemaS2',async (req,res)=> {
     try {
         var code = validateToken(req);
@@ -1105,6 +1106,7 @@ app.post('/listSchemaS2',async (req,res)=> {
             var usuario=await User.findById(req.body.idUser);
             var proveedorDatos=usuario.proveedorDatos;
             var sistema="S2";
+
             const result = await proveedorRegistros.find({sistema: sistema, proveedorId:proveedorDatos}).then();
             var arrs2=[];
             _.map((result),(row)=>{
@@ -1116,9 +1118,13 @@ app.post('/listSchemaS2',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
-            if(arrs2.length > 0 ){
-                query = {...query, "_id":{ $in:arrs2 }}
+
+            if(!query._id){
+                if(arrs2.length > 0 ){
+                    query = {...query, "_id":{ $in:arrs2 }}
+                }
             }
+
             const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult.docs;
@@ -1154,8 +1160,11 @@ app.post('/listSchemaS3P',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
-            if(arrs3p.length > 0 ){
-                query = {...query, "_id":{ $in:arrs3p }}
+
+            if(!query._id){
+                if(arrs3p.length > 0 ){
+                    query = {...query, "_id":{ $in:arrs3p }}
+                }
             }
 
             const paginationResult = await sancionados.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
@@ -1670,7 +1679,7 @@ app.post('/getCatalogs',async (req,res)=>{
             let strippedRows;
             if(docType === "genero" || docType === "ramo"|| docType === "tipoArea" || docType=== "nivelResponsabilidad" || docType === "tipoProcedimiento"
             ||docType === "tipoFalta" || docType === "tipoSancion" || docType === "moneda" || docType === "tipoDocumento" || docType === "tipoPersona"
-            ||docType === "pais" ||docType === "estado" ||docType === "municipio" ||docType === "vialidad" ){
+            ||docType === "pais" ||docType === "estado" ||docType === "municipio" ||docType === "vialidad" ||  docType === "tipoSancionS3P"){
                 try {
                      strippedRows = _.map(result, function (row) {
                         let rowExtend = _.extend({label: row.valor, value: JSON.stringify({clave:row.clave ,valor : row.valor})}, row.toObject());
