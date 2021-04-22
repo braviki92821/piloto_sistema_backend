@@ -793,9 +793,9 @@ app.put('/edit/user',async (req,res)=>{
                     }
 
                 if(correoexiste>0){
-                    res.status(500).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
+                    res.status(500).json({message : "El correo electrónico ya existe." , Status : 500});
                 }else if(proveedorvigente.estatus==false  && req.body.estatus==true){
-                    res.status(500).json({message : "El estatus del proveedor es no vigente.El usuario no puede ser vigente" , Status : 500});
+                    res.status(500).json({message : "El estatus del proveedor es no vigente." , Status : 500});
                 }
                 else{
                     let newBody = {...req.body };
@@ -1083,14 +1083,18 @@ app.post('/listSchemaS3S',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
+            let paginationResult =[];
 
             if(!query._id){
                 if(arrs3s.length > 0 ){
-                    query = {...query, "_id":{ $in:arrs3s }}
+                    query = {...query, "_id":{ $in:arrs3s }};
+                    paginationResult = await sancionados.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
+                }else
+                {
+                    paginationResult = [{page: page, limit: pageSize, sort: sortObj}];
                 }
             }
 
-            const paginationResult = await sancionados.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult.docs;
 
@@ -1126,17 +1130,19 @@ app.post('/listSchemaS2',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
+            let paginationResult=[];
 
             if(!query._id){
                 if(arrs2.length > 0 ){
-                    query = {...query, "_id":{ $in:arrs2 }}
+                query = {...query, "_id":{ $in:arrs2 }};
+                paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
+                }else{
+                    paginationResult = [{page :page , limit: pageSize, sort: sortObj}];
                 }
             }
 
-            const paginationResult = await Spic.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult.docs;
-
             let objResponse= {};
             objResponse["pagination"] = objpagination;
             objResponse["results"]= objresults;
@@ -1168,14 +1174,18 @@ app.post('/listSchemaS3P',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
+            let paginationResult=[];
 
             if(!query._id){
                 if(arrs3p.length > 0 ){
-                    query = {...query, "_id":{ $in:arrs3p }}
+                    query = {...query, "_id":{ $in:arrs3p }};
+                    paginationResult = await sancionados.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
+                }else
+                {
+                    paginationResult = [{page: page, limit: pageSize, sort: sortObj}];
                 }
             }
 
-            const paginationResult = await sancionados.paginate(query, {page :page , limit: pageSize, sort: sortObj}).then();
             let objpagination ={hasNextPage : paginationResult.hasNextPage, page:paginationResult.page, pageSize : paginationResult.limit, totalRows: paginationResult.totalDocs }
             let objresults = paginationResult.docs;
 
