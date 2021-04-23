@@ -521,7 +521,8 @@ app.delete('/deleteProvider',async (req,res)=>{
 
             if(req.body.request._id){
                 let fechabaja = moment().format();
-                let response = await Provider.findByIdAndUpdate( req.body.request._id , {$set: {fechaBaja : fechabaja}} ).exec();
+                let response = await Provider.findByIdAndUpdate( req.body.request._id , {$set: {fechaBaja : fechabaja,estatus:false}} ).exec();
+                let users= await User.updateMany({proveedorDatos:req.body.request._id},{$set:{estatus: false, proveedorDatos:""}});
                 res.status(200).json({message : "OK" , Status : 200, response : response});
             }else{
                 res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
@@ -793,9 +794,9 @@ app.put('/edit/user',async (req,res)=>{
                     }
 
                 if(correoexiste>0){
-                    res.status(500).json({message : "El correo electrónico ya existe." , Status : 500});
+                    res.status(500).json({message : "Error: El correo electrónico ya existe." ,tipo:"Error.", Status : 500});
                 }else if(proveedorvigente.estatus==false  && req.body.estatus==true){
-                    res.status(500).json({message : "El estatus del proveedor es no vigente." , Status : 500});
+                    res.status(500).json({message : "Error: El estatus del proveedor es no vigente." ,tipo:"Error.", Status : 500});
                 }
                 else{
                     let newBody = {...req.body };
@@ -822,7 +823,7 @@ app.put('/edit/user',async (req,res)=>{
                         response = await User.findByIdAndUpdate( req.body._id ,nuevoUsuario).exec();
                         res.status(200).json(response);
                     }else{
-                        res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
+                        res.status(500).json({message : "Error : Datos incompletos" ,tipo:"Error.", Status : 500});
                     }
                 }
 
@@ -1086,6 +1087,8 @@ app.post('/listSchemaS3S',async (req,res)=> {
             if(!query._id){
                 if(arrs3s.length > 0 ){
                     query = {...query, "_id":{ $in:arrs3s }}
+                }else{
+                    query = {"_id":{ $in:arrs3s }}
                 }
             }
 
@@ -1129,6 +1132,8 @@ app.post('/listSchemaS2',async (req,res)=> {
             if(!query._id){
                 if(arrs2.length > 0 ){
                     query = {...query, "_id":{ $in:arrs2 }}
+                }else{
+                    query = {"_id":{ $in:arrs2 }}
                 }
             }
 
@@ -1171,6 +1176,8 @@ app.post('/listSchemaS3P',async (req,res)=> {
             if(!query._id){
                 if(arrs3p.length > 0 ){
                     query = {...query, "_id":{ $in:arrs3p }}
+                }else{
+                    query = {"_id":{ $in:arrs3p }}
                 }
             }
 
