@@ -1083,7 +1083,6 @@ app.post('/listSchemaS3S',async (req,res)=> {
             let page = req.body.page === undefined ? 1 : req.body.page ;  //numero de pagina a mostrar
             let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
             let query = req.body.query === undefined ? {} : req.body.query;
-
             if(!query._id){
                 if(arrs3s.length > 0 ){
                     query = {...query, "_id":{ $in:arrs3s }}
