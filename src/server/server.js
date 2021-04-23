@@ -1797,8 +1797,8 @@ app.post('/getBitacora',async (req,res)=>{
             var hora = (new Date(horaAct-zona)).toISOString().slice(0, -5);
             return hora;
         }
-        var fechaInicial=horaActual(new Date(req.body.fechaInicial));
-        var fechaFinal=horaActual(new Date(req.body.fechaFinal));
+        var fechaInicial= new Date(req.body.fechaInicial);
+        var fechaFinal= new Date(req.body.fechaFinal);
         let objResponse= {};
         let strippedRows;
 
