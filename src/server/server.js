@@ -793,9 +793,9 @@ app.put('/edit/user',async (req,res)=>{
                     }
 
                 if(correoexiste>0){
-                    res.status(500).json({message : "El correo electrónico ya existe.Debes ingresar otro." , Status : 500});
+                    res.status(500).json({message : "El correo electrónico ya existe." , Status : 500});
                 }else if(proveedorvigente.estatus==false  && req.body.estatus==true){
-                    res.status(500).json({message : "El estatus del proveedor es no vigente.El usuario no puede ser vigente" , Status : 500});
+                    res.status(500).json({message : "El estatus del proveedor es no vigente." , Status : 500});
                 }
                 else{
                     let newBody = {...req.body };
