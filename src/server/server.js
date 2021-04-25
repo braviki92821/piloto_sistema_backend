@@ -611,6 +611,17 @@ app.put('/edit/provider',async(req, res)=>{
 
                             });
                             await User.updateOne({_id: row._id},{ sistemas:nuevoSistemas });
+                        }else
+                            if((sistemasproveedor.length==2 || sistemasproveedor.length==1) && (row.sistemas.length==1 || row.sistemas.length==2) ){
+                                nuevoSistemas=[];
+                                row.sistemas.map(sistemasusuario=>{
+                                    sistemasproveedor.map(sistema=>{
+                                        if(sistema==sistemasusuario){
+                                            nuevoSistemas.push(sistema);
+                                        }
+                                    });
+                                });
+                                await User.updateOne({_id: row._id},{ sistemas:nuevoSistemas });
                         }
                     }));
 
