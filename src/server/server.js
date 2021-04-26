@@ -522,7 +522,7 @@ app.delete('/deleteProvider',async (req,res)=>{
             if(req.body.request._id){
                 let fechabaja = moment().format();
                 let response = await Provider.findByIdAndUpdate( req.body.request._id , {$set: {fechaBaja : fechabaja,estatus:false}} ).exec();
-                let users= await User.updateMany({proveedorDatos:req.body.request._id},{$set:{estatus: false, proveedorDatos:""}});
+                let users= await User.updateMany({proveedorDatos:req.body.request._id},{$set:{estatus: false}});
                 res.status(200).json({message : "OK" , Status : 200, response : response});
             }else{
                 res.status(500).json({message : "Error : Datos incompletos" , Status : 500});
