@@ -1639,7 +1639,13 @@ app.post('/getProviders',async (req,res)=>{
         if(code.code == 401){
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ) {
-            const result = await Provider.find({fechaBaja: null}).then();
+            let result=[];
+            if(req.body.all==true){
+                result = await Provider.find().then();
+            }else{
+                result = await Provider.find({fechaBaja: null}).then();
+            }
+
             let objResponse = {};
 
             try {
