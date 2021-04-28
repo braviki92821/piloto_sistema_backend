@@ -809,7 +809,7 @@ app.put('/edit/user',async (req,res)=>{
                 }else if(proveedorvigente.estatus==false  && req.body.estatus==true){
                     res.status(500).json({message : "Error: El estatus del proveedor es no vigente." ,tipo:"Error.", Status : 500});
                 }else if(proveedorvigente.fechaBaja!=undefined){
-                    res.status(500).json({message : "Error: Tú proveedor está eliminado." ,tipo:"Error.", Status : 500});
+                    res.status(500).json({message : "Error: El campo proveedor de datos es requerido." ,tipo:"Error.", Status : 500});
                 }
                 else{
                     let newBody = {...req.body };
