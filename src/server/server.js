@@ -51,7 +51,7 @@ mongoose.set('useFindAndModify', false);
 let S2 = mongoose.connection.useDb("S2");
 let S3S = mongoose.connection.useDb("S3_Servidores");
 let S3P =mongoose.connection.useDb("S3_Particulares");
-//let port = process.env.PORT || 7777;
+let port = process.env.PORT || 3004;
 let app = express();
 app.use(
     cors(),
@@ -60,7 +60,7 @@ app.use(
 );
 
 
-let server = app.listen(3004, function () {
+let server = app.listen(port, function () {
     let host = server.address().address;
     let port = server.address().port;
     console.log(' function cloud Server is listening at http://%s:%s', host, port);
