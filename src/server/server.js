@@ -15,16 +15,10 @@ import moment from "moment";
 const mongoose = require('mongoose');
 const yaml = require('js-yaml')
 const fs = require('fs');
-const SwaggerClient = require('swagger-client');
-var Validator = require('swagger-model-validator');
-var validator = new Validator(SwaggerClient);
 var swaggerValidator = require('swagger-object-validator');
 var _ = require('underscore');
 var jwt = require('jsonwebtoken');
-import regeneratorRuntime from "regenerator-runtime";
-import * as Console from "console";
 import { SMTPClient } from 'emailjs';
-import {each, forEach} from "underscore";
 
 
 //connection mongo db
@@ -653,12 +647,12 @@ app.post('/create/user',async (req,res)=>{
             res.status(401).json({code: '401', message: code.message});
         }else if (code.code == 200 ){
             try {
-                var correoexiste=await User.find({correoElectronico:req.body.correoElectronico}, {fechaBaja: {$eq:null }}).countDocuments();
+                var correoexiste=await User.find({correoElectronico: {$regex: new RegExp("^"+req.body.correoElectronico,"i")}}, {fechaBaja: {$eq:null }}).countDocuments();
                 if(correoexiste===undefined){
                     correoexiste=0;
                 }
 
-                var usuarioexiste=await User.find({usuario:req.body.usuario}, {fechaBaja: {$eq:null }}).countDocuments();
+                var usuarioexiste=await User.find({usuario: {$regex: new RegExp("^"+req.body.usuario,"i")}}, {fechaBaja: {$eq:null }}).countDocuments();
                 if(usuarioexiste===undefined){
                     usuarioexiste=0;
                 }
