@@ -18,6 +18,7 @@ const fs = require('fs');
 var swaggerValidator = require('swagger-object-validator');
 var _ = require('underscore');
 var jwt = require('jsonwebtoken');
+import regeneratorRuntime from "regenerator-runtime";
 import { SMTPClient } from 'emailjs';
 
 
