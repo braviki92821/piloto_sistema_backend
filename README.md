@@ -45,13 +45,13 @@ Si está siguiendo la guía puede deberá agregar la siguiente sección a su arc
 
 ```YAML
   backend:
-	restart: always
-	container_name: backend
-	build:
-  	  context: piloto_sistema_backend
-  	  dockerfile: Dockerfile
-	ports:
-  	- 3004:3004
+    restart: always
+    container_name: backend
+    build:
+      context: piloto_sistema_backend
+      dockerfile: Dockerfile
+    ports:
+      - 3004:3004
 ```
 
 ### Archivo docker-compose.yml, para usar de forma independiente
@@ -60,13 +60,13 @@ Si lo que desea es hacer un despliegue independiente puede crear un archivo dock
 version: '3.1'
 services:
   backend:
-	restart: always
-	container_name: backend
-	build:
-  	  context: .
-  	  dockerfile: Dockerfile
-	ports:
-  	- 3004:3004
+    restart: always
+    container_name: backend
+    build:
+      context: piloto_sistema_backend
+      dockerfile: Dockerfile
+    ports:
+      - 3004:3004
 ```
 
 ### Construir el contenedor
