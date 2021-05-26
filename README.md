@@ -14,6 +14,7 @@ Por su parte, las Secretarías Ejecutivas Anticorrupción Estatales fungirán de
 |Webpack|4.17.2|Empaquetador de módulos.|
 |Babel|7.0.0|Herramienta que nos permite transformar el código JS|
 |Mongoose|5.9.26|Funciona como biblioteca para realizar la conexión e interacción con la base de datos.|
+|emailjs|3.4.0|Permite enviar correos electronicos(Texto, HTML, Archivos adjuntos) desde NodeJS usando cualquier servidor SMTP|
 
 ## Primeros pasos
 
