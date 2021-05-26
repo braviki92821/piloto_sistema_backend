@@ -1,4 +1,4 @@
-# Sistema de Carga de Datos del S2 y S3 - Frontend
+# Sistema de Carga de Datos del S2 y S3 - Backend
 
 Este sistema está diseñado para la carga y administración de datos del Sistema de Servidores Públicos que Intervienen en Procedimientos de Contratación (S2) y el Sistema de los Servidores Públicos y Particulares Sancionados (S3)
 
