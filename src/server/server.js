@@ -11,7 +11,7 @@ import Provider from './schemas/model.proovedor';
 import Catalog from './schemas/model.catalog';
 import Bitacora from './schemas/model.bitacora';
 import proveedorRegistros from './schemas/model.proveedorRegistros';
-import moment from "moment";
+import moment from 'moment-timezone';
 const mongoose = require('mongoose');
 const yaml = require('js-yaml')
 const fs = require('fs');
@@ -1949,7 +1949,7 @@ app.post('/getBitacora',async (req,res)=>{
             function formato(paginationResult){
                 moment.locale('es');
                 strippedRows = _.map(paginationResult, function (row) {
-                    var fecha=moment(row.fechaOperacion).format('LLLL');
+                    var fecha=moment(row.fechaOperacion).tz("America/Mexico_City").format('LLLL');
                     var sistema=row.sistema;
                     var sistema_label="";
                     var tipoOperacion=row.tipoOperacion;
