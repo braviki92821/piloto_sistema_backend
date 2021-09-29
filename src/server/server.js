@@ -45,7 +45,6 @@ console.log('mongodb://'+process.env.USERMONGO+':'+process.env.PASSWORDMONGO+'@'
 const db = mongoose.connect('mongodb://'+process.env.USERMONGO+':'+process.env.PASSWORDMONGO+'@'+process.env.HOSTMONGO+'/'+process.env.DATABASE, { useNewUrlParser: true,  useUnifiedTopology: true  })
     .then(() => console.log('Connect to MongoDB..'))
     .catch(err => console.error('Could not connect to MongoDB..', err))
-
 mongoose.set('useFindAndModify', false);
 
 let S2 = mongoose.connection.useDb("S2");
@@ -158,13 +157,13 @@ const esquemaS2=  Yup.object().shape({
     primerApellido : Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).required().trim(),
     segundoApellido :Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim(),
     genero : Yup.object(),
-    idnombre:Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,50}$'),'no se permiten cadenas vacias , max 50 caracteres ').required().trim(),
+    idnombre:Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,100}$'),'no se permiten cadenas vacias , max 100 caracteres ').required().trim(),
     idsiglas: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,50}$'),'no se permiten cadenas vacias , max 50 caracteres ').trim(),
     idclave: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9_\.\' ]{1,50}$'),'no se permiten cadenas vacias , max 50 caracteres ').trim(),
     puestoNombre: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim()
         .when('puestoNivel',  (puestoNivel) => {
             if(!puestoNivel)
-                return Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim().required("Al menos un campo seccion Puesto, es requerido ")
+                return Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,100}$"),'no se permiten números, ni cadenas vacias, max 100 caracteres ' ).trim().required("Al menos un campo seccion Puesto, es requerido ")
         }),
     puestoNivel :Yup.string().matches(new RegExp("^[a-zA-Z0-9 ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim(),
     tipoArea: Yup.array(),
@@ -173,7 +172,7 @@ const esquemaS2=  Yup.object().shape({
     sinombres: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim() ,
     siPrimerApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim() ,
     siSegundoApellido:Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim() ,
-    siPuestoNombre: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,25}$"),'no se permiten números, ni cadenas vacias, max 25 caracteres ' ).trim(),
+    siPuestoNombre: Yup.string().matches(new RegExp("^['A-zÀ-ú-\. ]{1,100}$"),'no se permiten números, ni cadenas vacias, max 100 caracteres ' ).trim(),
     siPuestoNivel: Yup.string().matches(new RegExp("^[a-zA-Z0-9 ]{1,25}$"),'no se permiten números, ni cadenas vacias ' ).trim()
 });
 
@@ -1492,8 +1491,6 @@ app.post('/updateS2Schema',async (req,res)=>{
         }else if (code.code == 200 ){
             let docSend={};
             let values = req.body;
-            //validaciones
-            console.log("estamos en las validaciones ");
             try {
                 await esquemaS2.validate(values);
             }catch (e) {
@@ -1575,7 +1572,8 @@ app.post('/updateS2Schema',async (req,res)=>{
 
             docSend["superiorInmediato"] = objSuperiorInmediato;
 
-            console.log("ya paso la validacion  "+ JSON.stringify(docSend));
+            if(values.observaciones){docSend["observaciones"]=values.observaciones}
+            //console.log("ya paso la validacion  "+ JSON.stringify(docSend));
 
             let fileContents = fs.readFileSync( path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
             let data = yaml.safeLoad(fileContents);
@@ -1588,7 +1586,6 @@ app.post('/updateS2Schema',async (req,res)=>{
                     docSend["_id"]= values._id;
                     let Spic = S2.model('Spic',spicSchema, 'spic');
                     let esquema = new Spic(docSend);
-                    console.log("IDDD"+ esquema);
                     let response;
                     if(req.body._id ){
                         await Spic.findByIdAndDelete(values._id);

@@ -215,25 +215,25 @@ components:
                 Servidor Público.
               example: Presidencia de la República
             tipoProcedimiento:
-                type: array
-                uniqueItems: true
-                items:
-                  type: integer
-                  minimum: 1
-                  maximum: 5
-                  description: |
+              type: array
+              uniqueItems: true
+              items:
+                type: integer
+                minimum: 1
+                maximum: 5
+                description: |
 
-                    Tipos de procedimiento en los que puede participar el Servidor Público.
-                      * `1` - CONTRATACIONES PÚBLICAS
-                      * `2` - CONCESIONES, LICENCIAS, PERMISOS, AUTORIZACIONES Y PRÓRROGAS
-                      * `3` - ENAJENACIÓN DE BIENES MUEBLES
-                      * `4` - ASIGNACIÓN Y EMISIÓN DE DICTÁMENES DE AVALÚOS NACIONALES
-                      * `5` - OTRO
+                  Tipos de procedimiento en los que puede participar el Servidor Público.
+                    * `1` - CONTRATACIONES PÚBLICAS
+                    * `2` - CONCESIONES, LICENCIAS, PERMISOS, AUTORIZACIONES Y PRÓRROGAS
+                    * `3` - ENAJENACIÓN DE BIENES MUEBLES
+                    * `4` - ASIGNACIÓN Y EMISIÓN DE DICTÁMENES DE AVALÚOS NACIONALES
+                    * `5` - OTRO
 
-                      *******Deberá devolver todos los registros que contengan al menos uno de los valores solicitados.
-                example:
-                  - 1
-                  - 2
+                    *******Deberá devolver todos los registros que contengan al menos uno de los valores solicitados.
+              example:
+                - 1
+                - 2
             rfcSolicitante:
               type: string
               description: >-
@@ -442,12 +442,12 @@ components:
                 valor:
                   type: string
             description: |
-                Tipos de procedimiento en los que puede participar el Servidor Público.
-                * `1` - CONTRATACIONES PÚBLICAS
-                * `2` - CONCESIONES, LICENCIAS, PERMISOS, AUTORIZACIONES Y PRÓRROGAS
-                * `3` - ENAJENACIÓN DE BIENES MUEBLES
-                * `4` - ASIGNACIÓN Y EMISIÓN DE DICTÁMENES DE AVALÚOS NACIONALES
-                * `5` - OTRO
+              Tipos de procedimiento en los que puede participar el Servidor Público.
+              * `1` - CONTRATACIONES PÚBLICAS
+              * `2` - CONCESIONES, LICENCIAS, PERMISOS, AUTORIZACIONES Y SUS PRÓRROGAS
+              * `3` - ENAJENACIÓN DE BIENES MUEBLES
+              * `4` - ASIGNACIÓN Y EMISIÓN DE DICTÁMENES DE AVALÚOS NACIONALES
+              * `5` - OTRO
           superiorInmediato:
             type: object
             properties:
@@ -492,6 +492,9 @@ components:
                       Nivel del puesto del superior inmediato del Servidor
                       Público
                     example: '1234567890'
+          observaciones:
+            type: string
+            description: Aclaraciones y observaciones
 
     dependencias:
       description: >-

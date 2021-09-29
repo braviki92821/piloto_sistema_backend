@@ -35,7 +35,8 @@ const spicSchema = new Schema({
             nombre: String,
             nivel: String
         }
-    }
+    },
+    observaciones: String
 });
 
 spicSchema.plugin(mongoosePaginate);
