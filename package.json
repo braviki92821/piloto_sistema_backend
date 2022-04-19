@@ -31,9 +31,8 @@
     "yup": "^0.31.0"
   },
   "scripts": {
-    "build": "webpack --mode development",
-    "prod": "webpack --mode production",
-    "start": "node ./dist/server.js"
+    "dev": "nodemon src/server/server.js",
+    "start": "node src/server/server.js"
   },
   "eslintConfig": {
     "extends": [
