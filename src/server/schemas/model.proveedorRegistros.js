@@ -3,9 +3,9 @@ const mongoosePaginate = require('mongoose-paginate-v2');
 const mongoose = require('mongoose');
 
 const proveedorRegistrosSchema = new Schema({
-    proveedorId:mongoose.ObjectId,
-    registroSistemaId:mongoose.ObjectId,
-    sistema:String
+  proveedorId: mongoose.ObjectId,
+  registroSistemaId: mongoose.ObjectId,
+  sistema: String
 });
 
 proveedorRegistrosSchema.plugin(mongoosePaginate);
