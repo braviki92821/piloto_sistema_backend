@@ -1,25 +1,50 @@
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import path from 'path';
-import * as Yup from 'yup';
-import User from './schemas/model.user';
-import { spicSchema } from './schemas/model.s2';
-import { ssancionadosSchema } from './schemas/model.s3s';
-import { psancionadosSchema } from './schemas/model.s3p';
-import Provider from './schemas/model.proovedor';
-import Catalog from './schemas/model.catalog';
-import Bitacora from './schemas/model.bitacora';
-import proveedorRegistros from './schemas/model.proveedorRegistros';
-import moment from 'moment-timezone';
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const path = require('path');
+const Yup = require('yup');
+const User = require('./schemas/model.user');
+const { spicSchema } = require('./schemas/model.s2');
+const { ssancionadosSchema } = require('./schemas/model.s3s');
+const { psancionadosSchema } = require('./schemas/model.s3p');
+const Provider = require('./schemas/model.proovedor');
+const Catalog = require('./schemas/model.catalog');
+const Bitacora = require('./schemas/model.bitacora');
+const proveedorRegistros = require('./schemas/model.proveedorRegistros');
+const moment = require('moment-timezone');
 const mongoose = require('mongoose');
 const yaml = require('js-yaml');
 const fs = require('fs');
+// const regeneratorRuntime = require('regenerator-runtime');
+const { SMTPClient } = require('emailjs');
+
+// import express from 'express';
+// import cors from 'cors';
+// import bodyParser from 'body-parser';
+// import path from 'path';
+// import * as Yup from 'yup';
+// import User from './schemas/model.user';
+// import { spicSchema } from './schemas/model.s2';
+// import { ssancionadosSchema } from './schemas/model.s3s';
+// import { psancionadosSchema } from './schemas/model.s3p';
+// import Provider from './schemas/model.proovedor';
+// import Catalog from './schemas/model.catalog';
+// import Bitacora from './schemas/model.bitacora';
+// import proveedorRegistros from './schemas/model.proveedorRegistros';
+// import moment from 'moment-timezone';
+// const mongoose = require('mongoose');
+// const yaml = require('js-yaml');
+// const fs = require('fs');
+// import regeneratorRuntime from 'regenerator-runtime';
+// import { SMTPClient } from 'emailjs';
+
 var swaggerValidator = require('swagger-object-validator');
 var _ = require('underscore');
 var jwt = require('jsonwebtoken');
-import regeneratorRuntime from 'regenerator-runtime';
-import { SMTPClient } from 'emailjs';
+const { esquemaS2, schemaUserCreate, schemaUser, schemaProvider } = require('./schemas/yup.esquemas');
+// import regeneratorRuntime from 'regenerator-runtime';
+// import { SMTPClient } from 'emailjs';
 
 if (typeof process.env.EMAIL === 'undefined') {
   console.log('no existe el valor de EMAIL en las variables de entorno');
@@ -36,10 +61,10 @@ if (typeof process.env.HOST_EMAIL === 'undefined') {
   process.exit(1);
 }
 
-console.table({ email: process.env.EMAIL, pass: process.env.PASS_EMAIL, host: process.env.HOST_EMAIL });
+// console.table({ email: process.env.EMAIL, pass: process.env.PASS_EMAIL, host: process.env.HOST_EMAIL });
 
 //connection mongo db
-console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
+// console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
 const db = mongoose
   .connect('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connect to MongoDB..'))
@@ -98,99 +123,6 @@ var validateToken = function (req) {
   }
 };
 
-const esquemaS3 = Yup.object().shape({
-  expediente: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9 ]{1,25}$'), 'No se permiten cadenas vacías, máximo 25 caracteres').trim(),
-  idnombre: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,50}$"), 'No se permiten cadenas vacías, máximo 50 caracteres').required('El campo Nombres de la sección Institución Dependencia es requerido').trim(),
-  idsiglas: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,25}$"), 'No se permiten cadenas vacías, máximo 25 caracteres ').trim(),
-  idclave: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,25}$"), 'No se permiten cadenas vacías, máximo 25 caracteres').trim(),
-  SPSnombres: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'No se permiten números, ni cadenas vacías máximo 25 caracteres ').required('El campo Nombres de Servidor público es requerido').trim(),
-  SPSprimerApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'No se permiten números, ni cadenas vacías máximo 25 caracteres').required('El campo Primer apellido de Servidor público es requerido').trim(),
-  SPSsegundoApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'No se permiten números, ni cadenas vacías máximo 25 caracteres').trim(),
-  SPSgenero: Yup.object(),
-  SPSpuesto: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'No se permiten números, ni cadenas vacías máximo 25 caracteres').required('El campo Puesto de Servidor público es requerido').trim(),
-  SPSnivel: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,25}$"), 'No se cadenas vacías, máximo 25 caracteres').trim(),
-  autoridadSancionadora: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'No se permiten números, ni cadenas vacías máximo 25 caracteres').trim(),
-  tipoFalta: Yup.object(),
-  tpfdescripcion: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9 ]{1,50}$'), 'No se permiten cadenas vacías, máximo 50 caracteres').trim(),
-  tipoSancion: Yup.array().min(1).required('Se requiere seleccionar mínimo una opción del campo Tipo sanción'),
-  tsdescripcion: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9 ]{1,50}$'), 'No se permiten cadenas vacías, máximo 50 caracteres').trim(),
-  causaMotivoHechos: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9 ]{1,500}$'), 'No se permiten cadenas vacías, máximo 500 caracteres').required('El campo Causa o motivo de la sanción es requerido').trim(),
-  resolucionURL: Yup.string().matches(/((https?):\/\/)?(www.)?[a-z0-9]+(\.[a-z]{2,}){1,3}(#?\/?[a-zA-Z0-9#]+)*\/?(\?[a-zA-Z0-9-_]+=[a-zA-Z0-9-%]+&?)?$/, 'Introduce una direccion de internet valida'),
-  resolucionFecha: Yup.string().required('El campo Fecha de resolución es requerido'),
-  multaMonto: Yup.string().matches(new RegExp('^([0-9]*[.])?[0-9]+$'), 'Solo se permiten números enteros o decimales').required('El campo Monto es requerido'),
-  multaMoneda: Yup.object().required('El campo Moneda es requerido'),
-  inhabilitacionPlazo: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9 ]*$'), 'No se permiten cadenas vacías').trim(),
-  inhabilitacionFechaInicial: Yup.string().required('El campo Fecha inicial de la sección  es requerido'),
-  inhabilitacionFechaFinal: Yup.string().required('El campo Fecha final de la sección  es requerido'),
-  observaciones: Yup.string().matches(new RegExp('^[A-zÀ-ú-0-9 ]{1,500}$'), 'No se permiten cadenas vacías, máximo 500 caracteres').trim(),
-  documents: Yup.array().of(
-    Yup.object().shape({
-      docId: Yup.string(),
-      titulo: Yup.string().required('El campo Título de la sección Documentos es requerido ').max(50, 'Máximo 50 caracteres'),
-      descripcion: Yup.string().required('El campo Descripción de la sección Documentos es requerido ').max(200, 'Máximo 200 caracteres'),
-      url: Yup.string()
-        .matches(/((https?):\/\/)?(www.)?[a-z0-9]+(\.[a-z]{2,}){1,3}(#?\/?[a-zA-Z0-9#]+)*\/?(\?[a-zA-Z0-9-_]+=[a-zA-Z0-9-%]+&?)?$/, 'Introduce una direccion de internet valida')
-        .required('El campo URL de la sección Documentos es requerido'),
-      fecha: Yup.string().required('El campo Fecha de la sección Documentos es requerido'),
-      tipoDoc: Yup.object()
-    })
-  )
-});
-
-const esquemaS2 = Yup.object().shape({
-  ejercicioFiscal: Yup.string().matches(new RegExp('^[0-9]{4}$'), 'Debe tener 4 dígitos'),
-  ramo: Yup.string(),
-  nombres: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias ').required().trim(),
-  primerApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias ').required().trim(),
-  segundoApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias ').trim(),
-  genero: Yup.object(),
-  idnombre: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,100}$"), 'no se permiten cadenas vacias , max 100 caracteres ').required().trim(),
-  idsiglas: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,50}$"), 'no se permiten cadenas vacias , max 50 caracteres ').trim(),
-  idclave: Yup.string().matches(new RegExp("^[A-zÀ-ú-0-9_.' ]{1,50}$"), 'no se permiten cadenas vacias , max 50 caracteres ').trim(),
-  puestoNombre: Yup.string()
-    .matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias ')
-    .trim()
-    .when('puestoNivel', puestoNivel => {
-      if (!puestoNivel) return Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,100}$"), 'no se permiten números, ni cadenas vacias, max 100 caracteres ').trim().required('Al menos un campo seccion Puesto, es requerido ');
-    }),
-  puestoNivel: Yup.string().matches(new RegExp('^[a-zA-Z0-9 ]{1,25}$'), 'no se permiten números, ni cadenas vacias ').trim(),
-  tipoArea: Yup.array(),
-  nivelResponsabilidad: Yup.array(),
-  tipoProcedimiento: Yup.array().min(1).required(),
-  sinombres: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias, max 25 caracteres ').trim(),
-  siPrimerApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias, max 25 caracteres ').trim(),
-  siSegundoApellido: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,25}$"), 'no se permiten números, ni cadenas vacias, max 25 caracteres ').trim(),
-  siPuestoNombre: Yup.string().matches(new RegExp("^['A-zÀ-ú-. ]{1,100}$"), 'no se permiten números, ni cadenas vacias, max 100 caracteres ').trim(),
-  siPuestoNivel: Yup.string().matches(new RegExp('^[a-zA-Z0-9 ]{1,25}$'), 'no se permiten números, ni cadenas vacias ').trim()
-});
-
-const schemaUserCreate = Yup.object().shape({
-  vigenciaContrasena: Yup.string().required(),
-  fechaAlta: Yup.string().required()
-});
-
-const schemaUser = Yup.object().shape({
-  nombre: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"), 'no se permiten números, ni cadenas vacias').required('El campo nombre es requerido').trim(),
-  apellidoUno: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"), 'no se permiten números, ni cadenas vacias').required('El campo Primer apellido es requerido').trim(),
-  apellidoDos: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"), 'no se permiten números, ni cadenas vacias').trim(),
-  cargo: Yup.string().matches(new RegExp("^['A-zÀ-ú ]*$"), 'no se permiten números, ni cadenas vacias').required('El campo Cargo es requerido').trim(),
-  correoElectronico: Yup.string().required('El campo Correo electrónico es requerido').email(),
-  telefono: Yup.string().matches(new RegExp('^[0-9]{10}$'), 'Inserta un número de teléfono valido, 10 caracteres').required('El campo Número de teléfono es requerido').trim(),
-  extension: Yup.string().matches(new RegExp('^[0-9]{0,10}$'), 'Inserta un número de extensión valido , maximo 10 caracteres').trim(),
-  usuario: Yup.string().matches(new RegExp('^[a-zA-Z0-9]{8,}$'), 'Inserta al menos 8 caracteres, no se permiten caracteres especiales').required('El campo Nombre de usuario es requerido').trim(),
-  constrasena: Yup.string().matches(new RegExp('^(?=.*[0-9])(?=.*[!@#$%^&*()_+,.\\\\\\/;\':{}¿?!¡@#$%^&*/)(+,.°|:;"=<>_-]).{8,}$'), 'Inserta al menos 8 caracteres, al menos un número, almenos un caracter especial ').required('El campo Contraseña es requerido').trim(),
-  sistemas: Yup.array().min(1).required('El campo Sistemas aplicables es requerido'),
-  proveedorDatos: Yup.string().required('El campo Proveedor de datos es requerido'),
-  estatus: Yup.boolean().required('El campo Estatus es requerido')
-});
-
-const schemaProvider = Yup.object().shape({
-  dependencia: Yup.string().required('El nombre de la dependencia es requerido').matches(new RegExp('^[ñáéíóúáéíóúÁÉÍÓÚa-zA-Z ]*$'), 'Inserta solamente caracteres'),
-  sistemas: Yup.array().min(1).required('El campo sistemas es requerido'),
-  estatus: Yup.boolean().required('El campo estatus es requerido'),
-  fechaAlta: Yup.string()
-});
-
 async function registroBitacora(data) {
   let response;
   const nuevaBitacora = new Bitacora(data);
@@ -198,10 +130,12 @@ async function registroBitacora(data) {
 }
 
 async function validateSchema(doc, schema, validacion) {
+  let objError = { valid: true };
   let result = await validacion.validateModel(doc, schema);
-  if (result) {
-    let objError = {};
-    let arrayErrors = result.errorsWithStringTypes();
+
+  if (result.errors.length > 0) {
+    // let arrayErrors = result.errorsWithStringTypes();
+    let arrayErrors = result.errors;
     let textErrors;
     if (Array.isArray(doc)) {
       objError['docId'] = doc[0].id;
@@ -225,8 +159,8 @@ async function validateSchema(doc, schema, validacion) {
     }
     objError['errors'] = errors;
     objError['errorsHumanReadable'] = result.humanReadable();
-    return objError;
   }
+  return objError;
 }
 
 app.post('/validateSchemaS2', async (req, res) => {
@@ -236,7 +170,7 @@ app.post('/validateSchemaS2', async (req, res) => {
     if (code.code == 401) {
       res.status(401).json({ code: '401', message: code.message });
     } else if (code.code == 200) {
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis2.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaS2 = data.components.schemas.respSpic;
       let validacion = new swaggerValidator.Handler();
@@ -322,7 +256,7 @@ app.post('/validateSchemaS3S', async (req, res) => {
     if (code.code == 401) {
       res.status(401).json({ code: '401', message: code.message });
     } else if (code.code == 200) {
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3s.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis3s.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaResults = data.components.schemas.ssancionados.properties.results;
       schemaResults.items.properties.tipoFalta = data.components.schemas.tipoFalta;
@@ -405,7 +339,7 @@ app.post('/validateSchemaS3P', async (req, res) => {
     if (code.code == 401) {
       res.status(401).json({ code: '401', message: code.message });
     } else if (code.code == 200) {
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3p.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis3p.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaResults = data.components.schemas.resParticularesSancionados.properties.results;
       schemaResults.items.properties.particularSancionado.properties.domicilioExtranjero.properties.pais = data.components.schemas.pais;
@@ -704,25 +638,23 @@ app.post('/create/user', async (req, res) => {
           let fechaActual = moment();
           let newBody = { ...req.body, contrasena: pass, fechaAlta: fechaActual.format(), vigenciaContrasena: fechaActual.add(3, 'months').format().toString(), estatus: true };
 
-          await schemaUserCreate
-            .concat(schemaUser)
-            .validate({
-              nombre: newBody.nombre,
-              apellidoUno: newBody.apellidoUno,
-              apellidoDos: newBody.apellidoDos,
-              cargo: newBody.cargo,
-              correoElectronico: newBody.correoElectronico,
-              telefono: newBody.telefono,
-              extension: newBody.extension,
-              usuario: newBody.usuario,
-              constrasena: pass,
-              sistemas: newBody.sistemas,
-              proveedorDatos: newBody.proveedorDatos,
-              estatus: true,
-              fechaAlta: newBody.fechaAlta,
-              vigenciaContrasena: newBody.vigenciaContrasena,
-              rol: '2'
-            });
+          await schemaUserCreate.concat(schemaUser).validate({
+            nombre: newBody.nombre,
+            apellidoUno: newBody.apellidoUno,
+            apellidoDos: newBody.apellidoDos,
+            cargo: newBody.cargo,
+            correoElectronico: newBody.correoElectronico,
+            telefono: newBody.telefono,
+            extension: newBody.extension,
+            usuario: newBody.usuario,
+            constrasena: pass,
+            sistemas: newBody.sistemas,
+            proveedorDatos: newBody.proveedorDatos,
+            estatus: true,
+            fechaAlta: newBody.fechaAlta,
+            vigenciaContrasena: newBody.vigenciaContrasena,
+            rol: '2'
+          });
           if (newBody.passwordConfirmation) {
             delete newBody.passwordConfirmation;
           }
@@ -899,7 +831,7 @@ app.post('/insertS2Schema', async (req, res) => {
     if (code.code == 401) {
       res.status(401).json({ code: '401', message: code.message });
     } else if (code.code == 200) {
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis2.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaS2 = data.components.schemas.respSpic;
       let validacion = new swaggerValidator.Handler();
@@ -953,7 +885,7 @@ app.post('/insertS3SSchema', async (req, res) => {
       values['fechaCaptura'] = moment().format();
       values['id'] = 'FAKEID';
 
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3s.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis3s.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaResults = data.components.schemas.ssancionados.properties.results;
       schemaResults.items.properties.tipoFalta = data.components.schemas.tipoFalta;
@@ -1012,7 +944,7 @@ app.post('/insertS3PSchema', async (req, res) => {
       values['fechaCaptura'] = moment().format();
       values['id'] = 'FAKEID';
 
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3p.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis3p.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaResults = data.components.schemas.resParticularesSancionados.properties.results;
       schemaResults.items.properties.particularSancionado.properties.domicilioExtranjero.properties.pais = data.components.schemas.pais;
@@ -1028,7 +960,7 @@ app.post('/insertS3PSchema', async (req, res) => {
           let psancionados = S3P.model('Psancionados', psancionadosSchema, 'psancionados');
           let response;
           delete values.id;
-          console.log(values);
+          //   console.log(values);
           let esquema = new psancionados(values);
           const result = await esquema.save();
           let objResponse = {};
@@ -1338,7 +1270,7 @@ app.post('/updateS3PSchema', async (req, res) => {
       values['fechaCaptura'] = moment().format();
       values['id'] = 'FAKEID';
 
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3p.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis3p.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaResults = data.components.schemas.resParticularesSancionados.properties.results;
       schemaResults.items.properties.particularSancionado.properties.domicilioExtranjero.properties.pais = data.components.schemas.pais;
@@ -1403,7 +1335,7 @@ app.post('/updateS3SSchema', async (req, res) => {
       values['fechaCaptura'] = moment().format();
       values['id'] = 'FAKEID';
 
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis3s.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis3s.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaResults = data.components.schemas.ssancionados.properties.results;
       schemaResults.items.properties.tipoFalta = data.components.schemas.tipoFalta;
@@ -1419,7 +1351,6 @@ app.post('/updateS3SSchema', async (req, res) => {
           values['_id'] = id;
           let sancionados = S3S.model('Ssancionados', ssancionadosSchema, 'ssancionados');
           let esquema = new sancionados(values);
-          console.log('IDDD' + esquema);
           let response;
           if (values._id) {
             await sancionados.findByIdAndDelete(values._id);
@@ -1569,7 +1500,7 @@ app.post('/updateS2Schema', async (req, res) => {
       }
       //console.log("ya paso la validacion  "+ JSON.stringify(docSend));
 
-      let fileContents = fs.readFileSync(path.resolve(__dirname, '../src/resource/openapis2.yaml'), 'utf8');
+      let fileContents = fs.readFileSync(path.resolve(__dirname, '../resource/openapis2.yaml'), 'utf8');
       let data = yaml.safeLoad(fileContents);
       let schemaS2 = data.components.schemas.respSpic;
       let validacion = new swaggerValidator.Handler();
