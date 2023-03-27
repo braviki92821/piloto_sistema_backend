@@ -34,7 +34,7 @@ HOSTMONGO=<IP_HOST>:27017
 DATABASE=administracionUsuarios
 SEED=<seed>
 
-EMAIL=<correo_electronico>
+EMAIL=<braviki92821@gmail.com>
 PASS_EMAIL=<password_correo_electronico>
 HOST_EMAIL=<servidor smtp>
 ```

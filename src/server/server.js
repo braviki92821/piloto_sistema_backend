@@ -65,8 +65,9 @@ if (typeof process.env.HOST_EMAIL === 'undefined') {
 
 //connection mongo db
 // console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
+//+ process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + 
 const db = mongoose
-  .connect('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect('mongodb://'+process.env.HOSTMONGO + '/' + process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connect to MongoDB..'))
   .catch(err => console.error('Could not connect to MongoDB..', err));
 mongoose.set('useFindAndModify', false);
@@ -74,7 +75,7 @@ mongoose.set('useFindAndModify', false);
 let S2 = mongoose.connection.useDb('S2');
 let S3S = mongoose.connection.useDb('S3_Servidores');
 let S3P = mongoose.connection.useDb('S3_Particulares');
-let port = process.env.PORT || 3004;
+let port = 3004;
 let app = express();
 app.use(cors(), bodyParser.urlencoded({ extended: true }), bodyParser.json());
 
@@ -2013,19 +2014,20 @@ app.post('/changepassword', async (req, res) => {
 
 app.post('/validationpassword', async (req, res) => {
   var code = validateToken(req);
+   console.log(code)
   if (code.code == 401) {
     res.status(401).json({ code: '401', message: code.message });
   } else if (code.code == 200) {
     try {
       let id_usuario = req.body.id_usuario;
-
+      console.log(id_usuario)
       if (id_usuario == '') {
         res.status(200).json({ message: 'Id Usuario requerido.', Status: 500 });
         return false;
       }
 
       const result = await User.findById(id_usuario).exec();
-
+      console.log(result)
       if (result.contrasenaNueva === true) {
         res.status(200).json({ message: 'Necesitas cambiar tu contraseña', Status: 500, contrasenaNueva: true, rol: result.rol, sistemas: result.sistemas, proveedor: result.proveedorDatos, estatus: result.estatus });
       } else {
