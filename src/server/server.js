@@ -20,6 +20,8 @@ const fs = require('fs');
 const { SMTPClient } = require('emailjs');
 let app = express();
 app.use(cors(), bodyParser.urlencoded({ extended: true }), bodyParser.json());
+const port = process.env.PORTSERVER || 3004
+const host = process.env.HOST || '0.0.0.0'
 // import express from 'express';
 // import cors from 'cors';
 // import bodyParser from 'body-parser';
@@ -76,12 +78,9 @@ mongoose.set('useFindAndModify', false);
 let S2 = mongoose.connection.useDb('S2');
 let S3S = mongoose.connection.useDb('S3_Servidores');
 let S3P = mongoose.connection.useDb('S3_Particulares');
-let port = 3004;
 
 
-let server = app.listen(port, function () {
-  let host = server.address().address;
-  let port = server.address().port;
+app.listen(port,host ,function () {
   console.log(' function cloud Server is listening at http://'+host+':'+port);
 });
 
