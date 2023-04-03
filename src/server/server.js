@@ -67,7 +67,7 @@ if (typeof process.env.HOST_EMAIL === 'undefined') {
 // console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
 //+ process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + 
 const db = mongoose
-  .connect('mongodb://'+process.env.HOSTMONGO + '/' + process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect('mongodb+srv://'+process.env.USERMONGO +':'+process.env.PASSWORDMONGO+process.env.HOSTMONGO+process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connect to MongoDB..'))
   .catch(err => console.error('Could not connect to MongoDB..', err));
 mongoose.set('useFindAndModify', false);
@@ -82,7 +82,7 @@ app.use(cors(), bodyParser.urlencoded({ extended: true }), bodyParser.json());
 let server = app.listen(port, function () {
   let host = server.address().address;
   let port = server.address().port;
-  console.log(' function cloud Server is listening at http://%s:%s', host, port);
+  console.log(' function cloud Server is listening at http://'+host+':'+port);
 });
 
 function getArrayFormatTipoProcedimiento(array) {
@@ -1080,6 +1080,36 @@ app.post('/listSchemaS2', async (req, res) => {
   }
 });
 
+app.post('/listS2public',async (req,res)=>{
+  try{
+    var arrs2 = [];
+    let Spic = S2.model('Spic', spicSchema, 'spic');
+    let sortObj = req.body.sort === undefined ? {} : req.body.sort;
+    let page = req.body.page === undefined ? 1 : req.body.page; //numero de pagina a mostrar
+    let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+    let query = req.body.query === undefined ? {} : req.body.query;
+
+
+        //query = { ...query, _id: { $in: arrs2 } };
+      // } else {
+       // query = { _id: { $in: arrs2 } };
+      // }
+
+
+    const paginationResult = await Spic.paginate(query, { page: page, limit: pageSize, sort: sortObj }).then();
+    let objpagination = { hasNextPage: paginationResult.hasNextPage, page: paginationResult.page, pageSize: paginationResult.limit, totalRows: paginationResult.totalDocs };
+    let objresults = paginationResult.docs;
+    let objResponse = {};
+    objResponse['pagination'] = objpagination;
+    objResponse['results'] = objresults;
+
+    res.status(200).json(objResponse);
+
+  }catch(e){
+    console.log(e)
+  }
+})
+
 app.post('/listSchemaS3P', async (req, res) => {
   try {
     var code = validateToken(req);
@@ -2014,13 +2044,11 @@ app.post('/changepassword', async (req, res) => {
 
 app.post('/validationpassword', async (req, res) => {
   var code = validateToken(req);
-   console.log(code)
   if (code.code == 401) {
     res.status(401).json({ code: '401', message: code.message });
   } else if (code.code == 200) {
     try {
       let id_usuario = req.body.id_usuario;
-      console.log(id_usuario)
       if (id_usuario == '') {
         res.status(200).json({ message: 'Id Usuario requerido.', Status: 500 });
         return false;
