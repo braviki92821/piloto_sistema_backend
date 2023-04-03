@@ -46,20 +46,20 @@ const { esquemaS2, schemaUserCreate, schemaUser, schemaProvider } = require('./s
 // import regeneratorRuntime from 'regenerator-runtime';
 // import { SMTPClient } from 'emailjs';
 
-if (typeof process.env.EMAIL === 'undefined') {
-  console.log('no existe el valor de EMAIL en las variables de entorno');
-  process.exit(1);
-}
+// if (typeof process.env.EMAIL === 'undefined') {
+//   console.log('no existe el valor de EMAIL en las variables de entorno');
+//   process.exit(1);
+// }
 
-if (typeof process.env.PASS_EMAIL === 'undefined') {
-  console.log('no existe el valor de PASS_EMAIL en las variables de entorno');
-  process.exit(1);
-}
+// if (typeof process.env.PASS_EMAIL === 'undefined') {
+//   console.log('no existe el valor de PASS_EMAIL en las variables de entorno');
+//   process.exit(1);
+// }
 
-if (typeof process.env.HOST_EMAIL === 'undefined') {
-  console.log('no existe el valor de HOST_EMAIL en las variables de entorno sos');
-  process.exit(1);
-}
+// if (typeof process.env.HOST_EMAIL === 'undefined') {
+//   console.log('no existe el valor de HOST_EMAIL en las variables de entorno sos');
+//   process.exit(1);
+// }
 
 // console.table({ email: process.env.EMAIL, pass: process.env.PASS_EMAIL, host: process.env.HOST_EMAIL });
 
