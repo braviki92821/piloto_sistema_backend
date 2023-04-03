@@ -70,7 +70,7 @@ const { esquemaS2, schemaUserCreate, schemaUser, schemaProvider } = require('./s
 // console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
 //+ process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + 
 const db = mongoose
-  .connect('mongodb+srv://'+process.env.USERMONGO+':'+process.env.PASSWORDMONGO+'@cluster0.rgkevuj.mongodb.net/'+process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect('mongodb+srv://root:OeJzNfkJqPEtPoph@cluster0.rgkevuj.mongodb.net/auth20', { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connect to MongoDB..'))
   .catch(err => console.error('Could not connect to MongoDB..', err));
 mongoose.set('useFindAndModify', false);
