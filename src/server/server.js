@@ -18,7 +18,8 @@ const yaml = require('js-yaml');
 const fs = require('fs');
 // const regeneratorRuntime = require('regenerator-runtime');
 const { SMTPClient } = require('emailjs');
-
+let app = express();
+app.use(cors(), bodyParser.urlencoded({ extended: true }), bodyParser.json());
 // import express from 'express';
 // import cors from 'cors';
 // import bodyParser from 'body-parser';
@@ -67,7 +68,7 @@ const { esquemaS2, schemaUserCreate, schemaUser, schemaProvider } = require('./s
 // console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
 //+ process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + 
 const db = mongoose
-  .connect('mongodb+srv://'+process.env.USERMONGO +':'+process.env.PASSWORDMONGO+process.env.HOSTMONGO+process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect('mongodb+srv://'+process.env.USERMONGO+':'+process.env.PASSWORDMONGO+process.env.HOSTMONGO+process.env.DATABASE, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connect to MongoDB..'))
   .catch(err => console.error('Could not connect to MongoDB..', err));
 mongoose.set('useFindAndModify', false);
@@ -76,8 +77,7 @@ let S2 = mongoose.connection.useDb('S2');
 let S3S = mongoose.connection.useDb('S3_Servidores');
 let S3P = mongoose.connection.useDb('S3_Particulares');
 let port = 3004;
-let app = express();
-app.use(cors(), bodyParser.urlencoded({ extended: true }), bodyParser.json());
+
 
 let server = app.listen(port, function () {
   let host = server.address().address;
