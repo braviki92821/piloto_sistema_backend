@@ -57,7 +57,7 @@ if (typeof process.env.PASS_EMAIL === 'undefined') {
 }
 
 if (typeof process.env.HOST_EMAIL === 'undefined') {
-  console.log('no existe el valor de HOST_EMAIL en las variables de entorno');
+  console.log('no existe el valor de HOST_EMAIL en las variables de entorno sos');
   process.exit(1);
 }
 
