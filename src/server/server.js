@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config('/.env');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -64,13 +64,13 @@ const { esquemaS2, schemaUserCreate, schemaUser, schemaProvider } = require('./s
 //   process.exit(1);
 // }
 
-// console.table({ email: process.env.EMAIL, pass: process.env.PASS_EMAIL, host: process.env.HOST_EMAIL });
+//console.table({ email: process.env.EMAIL, pass: process.env.PASS_EMAIL, host: process.env.HOST_EMAIL });
 
 //connection mongo db
 // console.log('mongodb://' + process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + process.env.HOSTMONGO + '/' + process.env.DATABASE);
 //+ process.env.USERMONGO + ':' + process.env.PASSWORDMONGO + '@' + 
 const db = mongoose
-  .connect('mongodb+srv://root:OeJzNfkJqPEtPoph@cluster0.rgkevuj.mongodb.net/auth20', { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect('mongodb://'+process.env.USERMONGO+':'+ process.env.PASSWORDMONGO + process.env.HOSTMONGO+process.env.DATABASE+'?authSource=admin', { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connect to MongoDB..'))
   .catch(err => console.error('Could not connect to MongoDB..', err));
 mongoose.set('useFindAndModify', false);
@@ -667,31 +667,33 @@ app.post('/create/user', async (req, res) => {
             newBody['apellidoDos'] = '';
           }
 
-          const client = new SMTPClient({
-            user: process.env.EMAIL,
-            password: process.env.PASS_EMAIL,
-            host: process.env.HOST_EMAIL,
-            ssl: true
-          });
+          // const client = new SMTPClient({
+          //   user: 'maskotasprueba@gmail.com',
+          //   password: '@BATman21@',
+          //   host: 'smtp.gmail.com',
+          //   ssl: true
+          // });
 
-          const message = {
-            text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
-            from: process.env.EMAIL,
-            to: newBody.correoElectronico,
-            subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
-            attachment: [{ data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>' + pass + '</h3></b></i></html>', alternative: true }]
-          };
-
-          client.send(message, function (err, message) {
-            if (err != null) {
-              res.status(200).json({ message: 'Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador.', Status: 500 });
-            }
-          });
+          // const message = {
+          //   text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
+          //   from: 'maskotasprueba@gmail.com',
+          //   to: newBody.correoElectronico,
+          //   subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
+          //   attachment: [{ data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>' + pass + '</h3></b></i></html>', alternative: true }]
+          // };
+           
+     
+          // client.send(message, function (err,mess) {
+          //   console.log(err || mess)
+          //   if (err != null) {
+          //     res.status(200).json({ message: 'Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador.', Status: 500 });
+          //   }
+          // });
 
           const nuevoUsuario = new User(newBody);
           let response;
           response = await nuevoUsuario.save();
-          res.status(200).json(response);
+          return res.status(200).json(response);
         }
       } catch (e) {
         let errorMessage = {};
@@ -699,7 +701,7 @@ app.post('/create/user', async (req, res) => {
         errorMessage['campo'] = e.path;
         errorMessage['tipoError'] = e.type;
         errorMessage['mensaje'] = e.message;
-        res.status(400).json(errorMessage);
+        return res.status(400).json(errorMessage);
       }
     }
   } catch (e) {
@@ -2052,9 +2054,7 @@ app.post('/validationpassword', async (req, res) => {
         res.status(200).json({ message: 'Id Usuario requerido.', Status: 500 });
         return false;
       }
-
       const result = await User.findById(id_usuario).exec();
-      console.log(result)
       if (result.contrasenaNueva === true) {
         res.status(200).json({ message: 'Necesitas cambiar tu contraseña', Status: 500, contrasenaNueva: true, rol: result.rol, sistemas: result.sistemas, proveedor: result.proveedorDatos, estatus: result.estatus });
       } else {
