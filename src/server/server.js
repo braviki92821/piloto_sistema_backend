@@ -80,6 +80,7 @@ let S3S = mongoose.connection.useDb('S3_Servidores');
 let S3P = mongoose.connection.useDb('S3_Particulares');
 
 
+
 app.listen(port,host ,function () {
   console.log(' function cloud Server is listening at http://'+host+':'+port);
 });
@@ -667,28 +668,28 @@ app.post('/create/user', async (req, res) => {
             newBody['apellidoDos'] = '';
           }
 
-          // const client = new SMTPClient({
-          //   user: 'maskotasprueba@gmail.com',
-          //   password: '@BATman21@',
-          //   host: 'smtp.gmail.com',
-          //   ssl: true
-          // });
+          const client = new SMTPClient({
+            user: 'pdnServices@braviki92821.com',
+            password: '@BATman21@',
+            host: 'smtp.hostinger.com',
+            ssl: true
+          });
 
-          // const message = {
-          //   text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
-          //   from: 'maskotasprueba@gmail.com',
-          //   to: newBody.correoElectronico,
-          //   subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
-          //   attachment: [{ data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>' + pass + '</h3></b></i></html>', alternative: true }]
-          // };
+          const message = {
+            text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
+            from: 'pdnServices@braviki92821.com',
+            to: newBody.correoElectronico,
+            subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
+            attachment: [{ data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>' + pass + '</h3></b></i></html>', alternative: true }]
+          };
            
      
-          // client.send(message, function (err,mess) {
-          //   console.log(err || mess)
-          //   if (err != null) {
-          //     res.status(200).json({ message: 'Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador.', Status: 500 });
-          //   }
-          // });
+          client.send(message, function (err,mess) {
+            console.log(err)
+            if (err != null) {
+              res.status(200).json({ message: 'Hay errores al enviar tu nueva contraseña.Ponte en contacto con el administrador.', Status: 500 });
+            }
+          });
 
           const nuevoUsuario = new User(newBody);
           let response;

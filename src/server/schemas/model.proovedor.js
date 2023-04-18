@@ -12,6 +12,6 @@ const providerSchema = new Schema({
 
 providerSchema.plugin(mongoosePaginate);
 
-let Proovedor = model('Proovedores', providerSchema, 'proovedores');
+let Proovedor = model('Proveedores', providerSchema, 'proveedores');
 
 module.exports = Proovedor;

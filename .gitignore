@@ -1,8 +1,6 @@
 /node_modules/
 /.idea/
-/.env
 /dist/
-/.env
 /index.html
 /webpack.config.js
 .vscode
