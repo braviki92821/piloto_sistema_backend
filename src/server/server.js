@@ -1037,6 +1037,37 @@ app.post('/listSchemaS3S', async (req, res) => {
   }
 });
 
+app.post('/listS3Spublic', async (req,res) => {
+  try {
+
+      let sancionados = S3S.model('Ssancionados', ssancionadosSchema, 'ssancionados');
+      let sortObj = req.body.sort === undefined ? {} : req.body.sort;
+      let page = req.body.page === undefined ? 1 : req.body.page; //numero de pagina a mostrar
+      let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+      let query = req.body.query === undefined ? {} : req.body.query;
+      // if (!query._id) {
+      //   if (arrs3s.length > 0) {
+      //     query = { ...query, _id: { $in: arrs3s } };
+      //   } else {
+      //     query = { _id: { $in: arrs3s } };
+      //   }
+      
+
+      const paginationResult = await sancionados.paginate(query, { page: page, limit: pageSize, sort: sortObj }).then();
+      let objpagination = { hasNextPage: paginationResult.hasNextPage, page: paginationResult.page, pageSize: paginationResult.limit, totalRows: paginationResult.totalDocs };
+      let objresults = paginationResult.docs;
+
+      let objResponse = {};
+      objResponse['pagination'] = objpagination;
+      objResponse['results'] = objresults;
+
+      res.status(200).json(objResponse);
+    
+  } catch (e) {
+    console.log(e);
+  }
+})
+
 app.post('/listSchemaS2', async (req, res) => {
   try {
     var code = validateToken(req);
@@ -1091,12 +1122,10 @@ app.post('/listS2public',async (req,res)=>{
     let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
     let query = req.body.query === undefined ? {} : req.body.query;
 
-
         //query = { ...query, _id: { $in: arrs2 } };
       // } else {
        // query = { _id: { $in: arrs2 } };
       // }
-
 
     const paginationResult = await Spic.paginate(query, { page: page, limit: pageSize, sort: sortObj }).then();
     let objpagination = { hasNextPage: paginationResult.hasNextPage, page: paginationResult.page, pageSize: paginationResult.limit, totalRows: paginationResult.totalDocs };
@@ -1155,6 +1184,29 @@ app.post('/listSchemaS3P', async (req, res) => {
     console.log(e);
   }
 });
+
+app.post('/listS3Ppublic', async (req,res) =>{
+  try {
+      let sancionados = S3P.model('Psancionados', psancionadosSchema, 'psancionados');
+      let sortObj = req.body.sort === undefined ? {} : req.body.sort;
+      let page = req.body.page === undefined ? 1 : req.body.page; //numero de pagina a mostrar
+      let pageSize = req.body.pageSize === undefined ? 10 : req.body.pageSize;
+      let query = req.body.query === undefined ? {} : req.body.query;
+
+      const paginationResult = await sancionados.paginate(query, { page: page, limit: pageSize, sort: sortObj }).then();
+      let objpagination = { hasNextPage: paginationResult.hasNextPage, page: paginationResult.page, pageSize: paginationResult.limit, totalRows: paginationResult.totalDocs };
+      let objresults = paginationResult.docs;
+
+      let objResponse = {};
+      objResponse['pagination'] = objpagination;
+      objResponse['results'] = objresults;
+
+      res.status(200).json(objResponse);
+    
+  } catch (e) {
+    console.log(e);
+  } 
+})
 
 app.delete('/deleteRecordS2', async (req, res) => {
   try {
