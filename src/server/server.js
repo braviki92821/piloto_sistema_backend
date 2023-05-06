@@ -20,8 +20,8 @@ const fs = require('fs');
 const { SMTPClient } = require('emailjs');
 let app = express();
 app.use(cors(), bodyParser.urlencoded({ extended: true }), bodyParser.json());
-const port = process.env.PORTSERVER || 3004
-const host = process.env.HOST || '0.0.0.0'
+const port = 3004
+const host = '127.0.0.1'
 // import express from 'express';
 // import cors from 'cors';
 // import bodyParser from 'body-parser';
@@ -81,7 +81,7 @@ let S3P = mongoose.connection.useDb('S3_Particulares');
 
 
 
-app.listen(port,host ,function () {
+app.listen(port,host ,() => {
   console.log(' function cloud Server is listening at http://'+host+':'+port);
 });
 
@@ -669,15 +669,15 @@ app.post('/create/user', async (req, res) => {
           }
 
           const client = new SMTPClient({
-            user: 'pdnServices@braviki92821.com',
-            password: '@BATman21@',
-            host: 'smtp.hostinger.com',
+            user: '186P0538@itspozarica.edu.mx',
+            password: 'Vik92821',
+            host: 'sandbox.smtp.mailtrap.io',
             ssl: true
           });
 
           const message = {
             text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
-            from: 'pdnServices@braviki92821.com',
+            from: '186P0538@itspozarica.edu.mx',
             to: newBody.correoElectronico,
             subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
             attachment: [{ data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>' + pass + '</h3></b></i></html>', alternative: true }]
@@ -1115,7 +1115,7 @@ app.post('/listSchemaS2', async (req, res) => {
 
 app.post('/listS2public',async (req,res)=>{
   try{
-    var arrs2 = [];
+    //var arrs2 = [];
     let Spic = S2.model('Spic', spicSchema, 'spic');
     let sortObj = req.body.sort === undefined ? {} : req.body.sort;
     let page = req.body.page === undefined ? 1 : req.body.page; //numero de pagina a mostrar
@@ -2103,11 +2103,13 @@ app.post('/validationpassword', async (req, res) => {
   } else if (code.code == 200) {
     try {
       let id_usuario = req.body.id_usuario;
+      console.log(id_usuario)
       if (id_usuario == '') {
         res.status(200).json({ message: 'Id Usuario requerido.', Status: 500 });
         return false;
       }
       const result = await User.findById(id_usuario).exec();
+      console.log(result)
       if (result.contrasenaNueva === true) {
         res.status(200).json({ message: 'Necesitas cambiar tu contraseña', Status: 500, contrasenaNueva: true, rol: result.rol, sistemas: result.sistemas, proveedor: result.proveedorDatos, estatus: result.estatus });
       } else {
