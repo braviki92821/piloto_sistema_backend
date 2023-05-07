@@ -49,10 +49,10 @@ const { esquemaS2, schemaUserCreate, schemaUser, schemaProvider } = require('./s
 // import regeneratorRuntime from 'regenerator-runtime';
 // import { SMTPClient } from 'emailjs';
 
-// if (typeof process.env.EMAIL === 'undefined') {
-//   console.log('no existe el valor de EMAIL en las variables de entorno');
-//   process.exit(1);
-// }
+   if(typeof process.env.EMAIL === 'undefined') {
+     console.log('no existe el valor de EMAIL en las variables de entorno');
+     process.exit(1);
+     }
 
 // if (typeof process.env.PASS_EMAIL === 'undefined') {
 //   console.log('no existe el valor de PASS_EMAIL en las variables de entorno');
@@ -669,15 +669,15 @@ app.post('/create/user', async (req, res) => {
           }
 
           const client = new SMTPClient({
-            user: '186P0538@itspozarica.edu.mx',
-            password: 'Vik92821',
-            host: 'sandbox.smtp.mailtrap.io',
+            user: process.env.EMAIL,
+            password: process.env.PASS_EMAIL,
+            host: process.env.HOST_EMAIL,
             ssl: true
           });
 
           const message = {
             text: 'Bienvenido al Sistema de Carga de datos S2 y S3',
-            from: '186P0538@itspozarica.edu.mx',
+            from: process.env.EMAIL,
             to: newBody.correoElectronico,
             subject: 'Bienvenido al Sistema de Carga de datos S2 y S3',
             attachment: [{ data: '<html>Buen día anexamos tu contraseña nueva para acceder al portal de la PDN. Contraseña:  <br><i><b><h3>' + pass + '</h3></b></i></html>', alternative: true }]
