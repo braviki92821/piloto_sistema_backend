@@ -4,7 +4,7 @@ services:
     restart: always
     container_name: backend
     build:
-      context: piloto_sistema_backend
+      context: ~/sistema_pdn/piloto_sistema_backend
       dockerfile: Dockerfile
     ports:
       - 3004:3004
